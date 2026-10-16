@@ -182,6 +182,52 @@
                 </div>
                 <span class="co-radio-row__price">{{ method.price === 0 ? 'FREE' : currencySymbol + method.price.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
               </label>
+
+              <!-- Delivery Information Policy Notice -->
+              <div class="co-delivery-notice">
+                <div class="co-delivery-notice__header">
+                  <div class="co-delivery-notice__title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>DELIVERY INFORMATION &mdash; TZORAH&rsquo;S EMPORIUM</span>
+                  </div>
+                  <span class="co-delivery-notice__badge">Port Harcourt &amp; Nationwide</span>
+                </div>
+
+                <p class="co-delivery-notice__intro">We deliver within Port Harcourt and to other locations across Nigeria.</p>
+
+                <div class="co-delivery-notice__grid">
+                  <div class="co-delivery-zone-item">
+                    <strong>Port Harcourt:</strong> Same-day delivery where available, or within 24 hours where possible.
+                  </div>
+                  <div class="co-delivery-zone-item">
+                    <strong>Other parts of Rivers State:</strong> Fees and delivery times depend on destination.
+                  </div>
+                  <div class="co-delivery-zone-item">
+                    <strong>South-South &amp; South-East:</strong> Estimated delivery time of 4&ndash;7 days.
+                  </div>
+                  <div class="co-delivery-zone-item">
+                    <strong>Other states nationwide:</strong> Estimated delivery time of 4&ndash;10 days, depending on destination.
+                  </div>
+                </div>
+
+                <div class="co-delivery-notice__notes">
+                  <span class="co-delivery-notice__notes-title">Please note:</span>
+                  <ul>
+                    <li>Delivery fees are determined by the dispatch rider or logistics company, not Tzorah&rsquo;s Emporium.</li>
+                    <li>Orders are typically processed and handed over for dispatch within 24&ndash;48 hours.</li>
+                    <li>Delivery timelines are estimates and may vary due to distance, logistics availability or unforeseen delays.</li>
+                    <li>Once an order has been handed over to the logistics provider, delays outside our control may occur.</li>
+                  </ul>
+                </div>
+
+                <NuxtLink to="/delivery" target="_blank" class="co-delivery-notice__link">
+                  Read complete delivery guidelines &rarr;
+                </NuxtLink>
+              </div>
             </div>
           </div>
 
@@ -1021,6 +1067,134 @@ const placeOrder = async () => {
   border-radius: 3px;
   color: var(--color-text-dark);
   letter-spacing: 0.03em;
+}
+
+/* ─── Delivery Notice in Checkout ────────────────── */
+.co-delivery-notice {
+  margin-top: 1.25rem;
+  padding: 1.15rem;
+  background-color: #fbf9f6;
+  border: 1px solid rgba(201, 168, 106, 0.35);
+  border-left: 3.5px solid var(--color-accent);
+  border-radius: 6px;
+}
+
+.co-delivery-notice__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.co-delivery-notice__title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-dark);
+}
+
+.co-delivery-notice__title svg {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.co-delivery-notice__badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background-color: rgba(201, 168, 106, 0.15);
+  color: var(--color-accent);
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+}
+
+.co-delivery-notice__intro {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.85rem;
+  line-height: 1.4;
+}
+
+.co-delivery-notice__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+  background: #ffffff;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.co-delivery-zone-item {
+  font-size: 0.75rem;
+  color: var(--color-text-dark);
+  line-height: 1.4;
+}
+
+.co-delivery-zone-item strong {
+  color: var(--color-text-dark);
+}
+
+.co-delivery-notice__notes {
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+  padding-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.co-delivery-notice__notes-title {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.co-delivery-notice__notes ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.co-delivery-notice__notes li {
+  font-size: 0.73rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.co-delivery-notice__notes li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.co-delivery-notice__link {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+
+.co-delivery-notice__link:hover {
+  opacity: 0.8;
 }
 
 /* ─── Order Summary Card ────────────────────────── */

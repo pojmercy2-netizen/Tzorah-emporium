@@ -77,8 +77,8 @@ const faqs = [
     a: 'Yes. Our calming oatmeal pet washes, coat sprays, and paw protection balms are crafted from non-toxic, lick-safe, natural ingredients formulated to soothe skin without harsh sulfates or synthetic irritants.'
   },
   {
-    q: 'What are your delivery timelines and fees?',
-    a: 'We offer express delivery within Lagos (same-day or next-day) and standard nationwide delivery across Nigeria within 2–4 business days. Free shipping is automatically applied on all orders above ₦50,000.'
+    q: 'What is your delivery coverage, timelines and fees?',
+    a: 'We deliver within Port Harcourt and to other locations across Nigeria. Port Harcourt: Same-day delivery where available or within 24 hours. Other parts of Rivers State: Fees & delivery times depend on destination. South-South & South-East: Estimated 4–7 days. Other states nationwide: Estimated 4–10 days. Please note that delivery fees are set by the dispatch rider or logistics company, and orders are processed within 24–48 hours.'
   }
 ]
 </script>

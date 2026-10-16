@@ -1,7 +1,7 @@
 <template>
   <section class="home-cta">
     <div class="home-cta__bg">
-      <img src="/images/or_adult.png" alt="TZORAH EMPORIUM Private Collection" class="home-cta__bg-img" />
+      <img src="/images/cta_elevate_bg.jpg" alt="TZORAH EMPORIUM Private Collection" class="home-cta__bg-img" />
       <div class="home-cta__overlay"></div>
     </div>
     <div class="container home-cta__container">

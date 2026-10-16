@@ -2,9 +2,9 @@
   <div>
     <TheHero />
     <Features />
-    <DepartmentShowcase />
     <NewArrivals />
-    <BrandStatement />
+    <HomeDelivery />
+    <HomeAbout />
     <HomeCTA />
     <HomeFAQ />
     <HomeContact />

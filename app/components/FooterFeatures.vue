@@ -99,8 +99,8 @@ const LockIcon = () => h(
 const footerFeatureList = [
   {
     icon: TruckIcon,
-    title: 'FREE SHIPPING',
-    description: 'On orders over $100'
+    title: 'NATIONWIDE DELIVERY',
+    description: 'Port Harcourt & across Nigeria'
   },
   {
     icon: RotateIcon,

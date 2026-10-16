@@ -4,13 +4,13 @@
     <!-- ═══════════════════════════════════════════ -->
     <!-- HERO HEADER                                 -->
     <!-- ═══════════════════════════════════════════ -->
-    <header class="shop-hero" style="display:flex;align-items:center;justify-content:center;text-align:center;">
+    <header class="shop-hero">
       <img src="/hero_fragrances.jpg" alt="TZORAH EMPORIUM Shop Banner" class="shop-hero__bg" />
       <div class="shop-hero__overlay"></div>
-      <div class="shop-hero__content" style="position:relative;z-index:2;text-align:center;width:100%;max-width:680px;padding:0 1.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;">
-        <span class="shop-hero__eyebrow" style="text-align:center;display:block;width:100%;">THE APOTHECARY &amp; BOUTIQUE</span>
-        <h1 class="shop-hero__title" style="text-align:center;width:100%;">The Shop</h1>
-        <p class="shop-hero__sub" style="text-align:center;width:100%;">USA oil perfumes, royal Middle Eastern attars, pure botanical oils, candlecraft &amp; discreet private boudoir.</p>
+      <div class="shop-hero__content">
+        <h1 class="shop-hero__headline">
+          SHOP ON <span class="shop-hero__highlight">TZORAH EMPORIUM</span> WITH CONFIDENCE
+        </h1>
       </div>
       <!-- Logo watermark overlay -->
       <div class="img-logo-overlay img-logo-overlay--br">
@@ -25,41 +25,58 @@
       
       <!-- Filters and Toolbar -->
       <div class="shop-toolbar">
-        <!-- Main Categories (Left) -->
-        <div class="shop-filters__categories">
-          <button
-            v-for="cat in categories"
-            :key="cat"
-            :class="['shop-filter-btn', { 'shop-filter-btn--active': activeCategory === cat }]"
-            @click="setCategory(cat)"
-          >
-            {{ cat }}
-          </button>
+        <!-- Main Categories Dropdown -->
+        <div class="shop-filter-group">
+          <label for="category-select" class="shop-filter-label">CATEGORY</label>
+          <div class="shop-select-wrapper">
+            <select
+              id="category-select"
+              v-model="activeCategory"
+              class="shop-custom-select"
+              @change="onCategoryChange"
+            >
+              <option v-for="cat in categories" :key="cat" :value="cat">
+                {{ cat === 'ALL' ? 'ALL CATEGORIES' : cat }}
+              </option>
+            </select>
+            <svg class="shop-select-arrow" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
         </div>
 
-        <!-- Sorting (Right) -->
-        <div class="shop-sort">
-          <label for="sort-select" class="shop-sort__label">SORT BY</label>
-          <select id="sort-select" v-model="sortBy" class="shop-sort__select">
-            <option value="featured">FEATURED</option>
-            <option value="price-low">PRICE: LOW TO HIGH</option>
-            <option value="price-high">PRICE: HIGH TO LOW</option>
-          </select>
+        <!-- Subcategories Dropdown -->
+        <div class="shop-filter-group">
+          <label for="subcategory-select" class="shop-filter-label">SUB-CATEGORY</label>
+          <div class="shop-select-wrapper">
+            <select
+              id="subcategory-select"
+              v-model="activeSubcategory"
+              class="shop-custom-select"
+            >
+              <option v-for="sub in subcategoriesForActiveCat" :key="sub" :value="sub">
+                {{ sub === 'ALL' ? (activeCategory === 'ALL' ? 'ALL SUB-CATEGORIES' : 'ALL ' + activeCategory) : sub }}
+              </option>
+            </select>
+            <svg class="shop-select-arrow" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
         </div>
-      </div>
 
-      <!-- Subcategory Pills (Crucial for OILS, PERFUMES, ADULT SECTION) -->
-      <div v-if="subcategoriesForActiveCat.length > 0" class="shop-subcategories-bar animate-fade-in">
-        <span class="subcat-bar__label">FILTER BY SUB-CATEGORY:</span>
-        <div class="subcat-bar__pills">
-          <button
-            v-for="sub in subcategoriesForActiveCat"
-            :key="sub"
-            :class="['subcat-pill', { 'subcat-pill--active': activeSubcategory === sub }]"
-            @click="activeSubcategory = sub"
-          >
-            {{ sub }}
-          </button>
+        <!-- Sorting Dropdown -->
+        <div class="shop-filter-group">
+          <label for="sort-select" class="shop-filter-label">SORT BY</label>
+          <div class="shop-select-wrapper">
+            <select id="sort-select" v-model="sortBy" class="shop-custom-select">
+              <option value="featured">FEATURED</option>
+              <option value="price-low">PRICE: LOW TO HIGH</option>
+              <option value="price-high">PRICE: HIGH TO LOW</option>
+            </select>
+            <svg class="shop-select-arrow" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
         </div>
       </div>
 
@@ -81,9 +98,6 @@
         </span>
         <button class="shop-clear-all" @click="resetFilters">Reset Filters</button>
       </div>
-
-      <!-- Product Count -->
-      <p class="shop-results-count">Showing {{ filteredProducts.length }} products</p>
 
       <!-- Products Grid -->
       <div class="product-grid">
@@ -211,8 +225,31 @@ const subcategoriesForActiveCat = computed(() => {
   if (activeCategory.value === 'ADULT SECTION') {
     return ['ALL', 'Adult Toys', 'Lingeries']
   }
-  return []
+  // When ALL is active, list all available subcategories across collections
+  return [
+    'ALL',
+    'USA Oil Perfumes',
+    'Middle Eastern Perfumes',
+    'Authentic Designer Perfumes',
+    'Niche Products',
+    'Fragrance Oils',
+    'Essential Oils',
+    'Natural Oils',
+    'Waxes & Bases',
+    'Wicks & Hardware',
+    'Tools & Vessels',
+    'Grooming & Washes',
+    'Balms & Salves',
+    'Unscented Body Care',
+    'Unscented Skincare',
+    'Adult Toys',
+    'Lingeries'
+  ]
 })
+
+const onCategoryChange = () => {
+  activeSubcategory.value = 'ALL'
+}
 
 const setCategory = (cat) => {
   activeCategory.value = cat
@@ -673,12 +710,24 @@ const addToCart = (product) => {
   min-height: 100vh;
 }
 
+/* ─── Screen Reader Only (Accessibility & SEO) ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* ─── Hero Header ─────────────────────────────── */
 .shop-hero {
   position: relative;
   width: 100%;
-  height: 48vh;
-  min-height: 340px;
+  height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -694,184 +743,155 @@ const addToCart = (product) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 .shop-hero__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(17, 17, 17, 0.4) 0%, rgba(17, 17, 17, 0.8) 100%);
+  background: linear-gradient(to bottom, rgba(17, 17, 17, 0.45) 0%, rgba(17, 17, 17, 0.75) 100%);
 }
 
 .shop-hero__content {
   position: relative;
   z-index: 2;
-  color: var(--color-text-light);
-  max-width: 680px;
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
   padding: 0 1.5rem;
-  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.shop-hero__eyebrow {
+.shop-hero__headline {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
-  letter-spacing: 0.25em;
-  color: var(--color-accent);
-  margin-bottom: 0.75rem;
-  display: inline-block;
+  font-size: 1.35rem;
   font-weight: 600;
-  text-align: center;
-}
-
-.shop-hero__title {
-  font-size: 3.5rem;
-  font-weight: 300;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  margin-bottom: 0.75rem;
+  color: #ffffff;
+  margin: 0 auto;
   text-align: center;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  line-height: 1.3;
   width: 100%;
 }
 
-.shop-hero__sub {
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.85);
-  line-height: 1.5;
-  text-align: center;
+.shop-hero__highlight {
+  color: var(--color-accent);
+}
+
+.img-logo-overlay {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.35;
+  z-index: 1;
+  width: 60px;
+}
+
+.img-logo-overlay--br {
+  right: 1.25rem;
+  bottom: 0.6rem;
+}
+
+.img-logo-overlay img {
   width: 100%;
+  height: auto;
+  display: block;
+  filter: brightness(0) invert(1);
 }
 
 /* ─── Shop Main Content ───────────────────────── */
 .shop-main {
-  padding-top: 3.5rem;
-  padding-bottom: 6rem;
+  padding-top: 1.25rem;
+  padding-bottom: 4rem;
 }
 
 /* Toolbar & Filters */
 .shop-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  width: 100%;
 }
 
-.shop-filters__categories {
+.shop-filter-group {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 320px;
 }
 
-.shop-filter-btn {
+.shop-filter-label {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  padding: 0.55rem 1.25rem;
-  background-color: transparent;
-  color: var(--color-text-muted);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  transition: all 0.25s ease;
-  text-transform: uppercase;
-}
-
-.shop-filter-btn:hover {
-  color: var(--color-text-dark);
-  border-color: rgba(0, 0, 0, 0.3);
-}
-
-.shop-filter-btn--active {
-  background-color: var(--color-text-dark);
-  color: #ffffff;
-  border-color: var(--color-text-dark);
-}
-
-.shop-sort {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.shop-sort__label {
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.shop-sort__select {
+.shop-select-wrapper {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.shop-custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   font-family: var(--font-sans);
   font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  padding: 0.5rem 1.5rem 0.5rem 0.75rem;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.04em;
+  padding: 0.65rem 2.2rem 0.65rem 0.85rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   background-color: #ffffff;
   color: var(--color-text-dark);
   outline: none;
   cursor: pointer;
   text-transform: uppercase;
-}
-
-/* Subcategories Bar */
-.shop-subcategories-bar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1rem 1.25rem;
-  background-color: #f0ece5;
-  border-left: 3px solid var(--color-accent);
-  margin-bottom: 2rem;
-}
-
-.subcat-bar__label {
-  font-family: var(--font-sans);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: var(--color-text-dark);
-}
-
-.subcat-bar__pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.subcat-pill {
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.05em;
-  padding: 0.35rem 0.9rem;
-  background-color: #ffffff;
-  color: var(--color-text-muted);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 20px;
-  cursor: pointer;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-.subcat-pill:hover {
-  border-color: var(--color-accent);
-  color: var(--color-text-dark);
+.shop-custom-select:hover {
+  border-color: rgba(0, 0, 0, 0.35);
 }
 
-.subcat-pill--active {
-  background-color: var(--color-accent);
-  color: #ffffff;
+.shop-custom-select:focus {
   border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(201, 168, 106, 0.25);
+}
+
+.shop-select-arrow {
+  position: absolute;
+  right: 0.85rem;
+  pointer-events: none;
+  color: var(--color-text-muted);
+  transition: transform 0.2s ease;
+}
+
+.shop-custom-select:focus + .shop-select-arrow {
+  color: var(--color-accent);
 }
 
 /* Adult Notice Banner */
@@ -1126,12 +1146,47 @@ const addToCart = (product) => {
 }
 
 @media (max-width: 768px) {
+  .shop-toolbar {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+  .shop-filter-group {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+    gap: 0.3rem;
+  }
+  .shop-filter-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
+  }
+  .shop-custom-select {
+    font-size: 0.62rem;
+    padding: 0.5rem 1.35rem 0.5rem 0.45rem;
+    letter-spacing: 0.02em;
+  }
+  .shop-select-arrow {
+    right: 0.35rem;
+    width: 10px;
+    height: 10px;
+  }
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem 1rem;
   }
-  .shop-hero__title {
-    font-size: 2.5rem;
+  .shop-hero {
+    height: 85px;
+  }
+  .shop-hero__headline {
+    font-size: 0.88rem;
+    letter-spacing: 0.08em;
+  }
+  .shop-main {
+    padding-top: 1rem;
   }
   .product-card__overlay {
     opacity: 1;
@@ -1145,13 +1200,25 @@ const addToCart = (product) => {
 }
 
 @media (max-width: 480px) {
-  .shop-toolbar {
-    flex-direction: column;
-    align-items: flex-start;
+  .shop-hero__headline {
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    line-height: 1.3;
   }
-  .shop-sort {
-    width: 100%;
-    justify-content: space-between;
+  .shop-toolbar {
+    gap: 0.35rem;
+  }
+  .shop-filter-label {
+    font-size: 0.54rem;
+  }
+  .shop-custom-select {
+    font-size: 0.58rem;
+    padding: 0.45rem 1.2rem 0.45rem 0.35rem;
+  }
+  .shop-select-arrow {
+    right: 0.25rem;
+    width: 9px;
+    height: 9px;
   }
   .product-card__title {
     font-size: 0.95rem;

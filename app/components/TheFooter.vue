@@ -4,7 +4,10 @@
       <div class="footer__grid">
         <!-- Brand Info Column -->
         <div class="footer__col footer__col--brand">
-          <img src="/logo.png" alt="TZORAH EMPORIUM Logo" class="footer__logo" />
+          <div class="footer__brand-wrap">
+            <img src="/logo.png" alt="TZORAH EMPORIUM Logo" class="footer__logo" />
+            <span class="footer__est-badge">EST. 2018</span>
+          </div>
           <p class="footer__bio">
             Curators of pure USA perfume oils, Middle Eastern scents, botanical oils, candlecraft, and discreet adult luxuries.
           </p>
@@ -90,7 +93,7 @@
       <!-- Footer Bottom -->
       <div class="footer__bottom">
         <p class="footer__copyright">
-          &copy; {{ new Date().getFullYear() }} {{ storeSettings.storeName || 'TZORAH EMPORIUM' }}. All rights reserved.
+          &copy; 2018 {{ storeSettings.storeName || 'TZORAH EMPORIUM' }}. All rights reserved.
         </p>
         <p v-if="storeSettings.supportEmail" class="footer__contact-line">
           <a :href="'mailto:' + storeSettings.supportEmail" class="footer__contact-email">{{ storeSettings.supportEmail }}</a>
@@ -159,6 +162,26 @@ const handleSubscribe = () => {
 
 .footer__col--brand {
   gap: 1.5rem;
+}
+
+.footer__brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.footer__est-badge {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--color-accent, #c9a96e);
+  border: 1px solid rgba(201, 169, 110, 0.4);
+  background: rgba(201, 169, 110, 0.1);
+  padding: 0.25rem 0.55rem;
+  border-radius: 2px;
+  text-transform: uppercase;
 }
 
 .footer__logo {

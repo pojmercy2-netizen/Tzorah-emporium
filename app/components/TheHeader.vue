@@ -40,6 +40,13 @@
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </button>
+        <!-- Wishlist Button → navigates to /profile?tab=wishlist -->
+        <a href="/profile?tab=wishlist" class="header__action-btn header__action-btn--desktop header__wishlist-btn" aria-label="Wishlist" @click.prevent="handleWishlistClick" style="position:relative">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+          <span v-if="wishlistCount > 0" class="header__wishlist-count">{{ wishlistCount }}</span>
+        </a>
         <!-- Account Profile → navigates to /profile or opens AuthModal -->
         <a href="/profile" class="header__action-btn header__action-btn--desktop" aria-label="Account" @click.prevent="handleProfileClick" style="position:relative">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -91,6 +98,12 @@
             </li>
 
             <li class="mobile-drawer__item mobile-drawer__item--visible">
+              <a href="/profile?tab=wishlist" class="mobile-drawer__link" @click.prevent="handleWishlistClickMobile">
+                WISHLIST <span v-if="wishlistCount > 0" class="mobile-drawer__wishlist-count">({{ wishlistCount }})</span>
+              </a>
+            </li>
+
+            <li class="mobile-drawer__item mobile-drawer__item--visible">
               <a href="/profile" class="mobile-drawer__link" @click.prevent="handleProfileClickMobile">ACCOUNT</a>
             </li>
 
@@ -133,14 +146,99 @@
   <Transition name="fade-slide">
     <div v-if="searchOpen" class="search-overlay">
       <div class="container search-overlay__container">
-        <div class="search-overlay__search-box">
-          <input type="text" placeholder="Search USA oils, perfumes, essential oils, candle craft, adult section..." class="search-overlay__input" ref="searchInput" @keyup.enter="performSearch" />
-          <button class="search-overlay__close" @click="toggleSearch">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
+        <div class="search-overlay__box-wrapper">
+          <div class="search-overlay__search-box">
+            <svg class="search-overlay__search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-          </button>
+            <input
+              v-model="headerSearchQuery"
+              type="text"
+              placeholder="Search USA oils, perfumes, essential oils, candle craft, adult section..."
+              class="search-overlay__input"
+              ref="searchInput"
+              @keyup.enter="submitSearch"
+            />
+            <button
+              v-if="headerSearchQuery"
+              class="search-overlay__clear"
+              @click="clearHeaderSearch"
+              aria-label="Clear search"
+            >
+              &times;
+            </button>
+            <button class="search-overlay__submit-btn" @click="submitSearch" aria-label="Perform search">
+              SEARCH
+            </button>
+            <button class="search-overlay__close" @click="toggleSearch" aria-label="Close search">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Trending Suggestions when empty -->
+          <div v-if="!headerSearchQuery.trim()" class="search-overlay__suggestions">
+            <span class="search-overlay__suggestions-label">TRENDING SEARCHES:</span>
+            <div class="search-overlay__chips">
+              <button
+                v-for="chip in popularSearches"
+                :key="chip"
+                class="search-chip"
+                @click="selectSearchChip(chip)"
+              >
+                {{ chip }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Live Product Results Dropdown -->
+          <div v-else class="search-live-results">
+            <div v-if="liveResults.length > 0" class="search-results-list">
+              <div class="search-results-summary">
+                <span>FOUND <strong>{{ liveResults.length }}</strong> PRODUCT{{ liveResults.length > 1 ? 'S' : '' }}</span>
+                <button class="search-view-all-link" @click="submitSearch">View All in Shop &rarr;</button>
+              </div>
+
+              <div
+                v-for="item in liveResults.slice(0, 5)"
+                :key="item.id"
+                class="search-result-row"
+                @click="goToProduct(item)"
+              >
+                <div class="search-result-thumb">
+                  <img :src="item.image || '/images/products/perf_usa_1.png'" :alt="item.name" />
+                </div>
+                <div class="search-result-info">
+                  <span class="search-result-name">{{ item.name }}</span>
+                  <div class="search-result-tags">
+                    <span class="search-tag-badge">{{ item.category }}</span>
+                    <span v-if="item.subcategory" class="search-tag-sub">{{ item.subcategory }}</span>
+                  </div>
+                </div>
+                <div class="search-result-meta">
+                  <span class="search-result-price">{{ formatPrice(item.price) }}</span>
+                  <span class="search-result-view">View &rarr;</span>
+                </div>
+              </div>
+
+              <div class="search-results-footer" v-if="liveResults.length > 5">
+                <button class="btn-search-all-results" @click="submitSearch">
+                  VIEW ALL {{ liveResults.length }} PRODUCTS FOR "{{ headerSearchQuery.trim() }}"
+                </button>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="search-results-empty">
+              <p>No products found matching "<strong>{{ headerSearchQuery }}</strong>".</p>
+              <p class="search-results-tip">Try searching for fragrance names like "Baccarat", "Oil", "Vanilla", or "Candle".</p>
+              <button class="btn-search-anyway" @click="submitSearch">Search in Shop Catalog &rarr;</button>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -154,7 +252,8 @@ import { useRoute } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 
 const route = useRoute()
-const { handleProfileClick, currentUser } = useAuth()
+const { handleProfileClick, handleWishlistClick, currentUser } = useAuth()
+const { wishlistCount, loadWishlist } = useWishlist()
 
 const isScrolled = ref(false)
 const mobileMenuOpen = ref(false)
@@ -171,6 +270,11 @@ watch(() => route.fullPath, () => {
 const handleProfileClickMobile = (e) => {
   closeMobileMenu()
   handleProfileClick(e)
+}
+
+const handleWishlistClickMobile = (e) => {
+  closeMobileMenu()
+  handleWishlistClick(e)
 }
 
 const cartCount = useState('cartCount', () => 0)
@@ -193,6 +297,7 @@ const handleKeyDown = (e) => {
 }
 
 onMounted(() => {
+  loadWishlist()
   window.addEventListener('scroll', handleScroll)
   window.addEventListener('keydown', handleKeyDown)
   handleScroll()
@@ -211,18 +316,81 @@ const closeMobileMenu = () => {
   mobileMenuOpen.value = false
 }
 
-const toggleSearch = () => {
-  searchOpen.value = !searchOpen.value
-  if (searchOpen.value) {
-    setTimeout(() => {
-      searchInput.value?.focus()
-    }, 100)
+const headerSearchQuery = ref('')
+const allProducts = ref([])
+const popularSearches = [
+  'USA Oil Perfumes',
+  'Baccarat Rouge',
+  'Middle Eastern',
+  'Essential Oils',
+  'Candle Making',
+  'Natural Oils'
+]
+
+const loadProductsForSearch = async () => {
+  if (allProducts.value.length === 0) {
+    try {
+      const data = await $fetch('/api/v1/products')
+      if (Array.isArray(data)) {
+        allProducts.value = data
+      }
+    } catch (err) {
+      console.error('Failed to load search products catalog:', err)
+    }
   }
 }
 
-const performSearch = (e) => {
-  showToast(`Searching for: "${e.target.value}"`)
+const liveResults = computed(() => {
+  const q = headerSearchQuery.value.toLowerCase().trim()
+  if (!q) return []
+  return allProducts.value.filter(p => {
+    const name = (p.name || '').toLowerCase()
+    const desc = (p.description || '').toLowerCase()
+    const cat = (p.category || p.cat_name || '').toLowerCase()
+    const sub = (p.subcategory || '').toLowerCase()
+    return name.includes(q) || desc.includes(q) || cat.includes(q) || sub.includes(q)
+  })
+})
+
+const toggleSearch = () => {
+  searchOpen.value = !searchOpen.value
+  if (searchOpen.value) {
+    loadProductsForSearch()
+    setTimeout(() => {
+      searchInput.value?.focus()
+    }, 120)
+  }
+}
+
+const clearHeaderSearch = () => {
+  headerSearchQuery.value = ''
+  searchInput.value?.focus()
+}
+
+const selectSearchChip = (chip) => {
+  headerSearchQuery.value = chip
+  searchInput.value?.focus()
+}
+
+const submitSearch = () => {
+  const q = headerSearchQuery.value.trim()
   searchOpen.value = false
+  if (q) {
+    navigateTo({ path: '/shop', query: { q } })
+  } else {
+    navigateTo('/shop')
+  }
+}
+
+const goToProduct = (item) => {
+  searchOpen.value = false
+  navigateTo({ path: '/shop', query: { q: item.name } })
+}
+
+const formatPrice = (val) => {
+  const symbol = storeSettings.value?.currency === 'USD' ? '$' : '₦'
+  const num = parseFloat(val) || 0
+  return `${symbol}${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
 }
 
 const toasts = useState('toasts', () => [])
@@ -395,6 +563,29 @@ watch(cartCount, () => {
 .header__cart-count--pop {
   transform: scale(1.3);
   background-color: var(--color-accent);
+}
+
+.header__wishlist-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #e63946;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+}
+
+.mobile-drawer__wishlist-count {
+  color: #e63946;
+  font-weight: 700;
+  margin-left: 0.25rem;
 }
 
 .header__admin-dot {
@@ -920,9 +1111,12 @@ watch(cartCount, () => {
   left: 0;
   width: 100%;
   background-color: var(--color-bg-light);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(184, 152, 116, 0.25);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  padding: 1.75rem 0 2rem;
+  z-index: 120;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .search-overlay__container {
@@ -930,34 +1124,340 @@ watch(cartCount, () => {
   justify-content: center;
 }
 
-.search-overlay__search-box {
+.search-overlay__box-wrapper {
   width: 100%;
-  max-width: 600px;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.search-overlay__search-box {
   position: relative;
   display: flex;
   align-items: center;
+  background: #ffffff;
+  border: 1.5px solid rgba(0, 0, 0, 0.12);
+  border-radius: 40px;
+  padding: 0.4rem 0.6rem 0.4rem 1.2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.search-overlay__search-box:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 6px 24px rgba(184, 152, 116, 0.18);
+}
+
+.search-overlay__search-icon {
+  color: var(--color-accent);
+  margin-right: 0.75rem;
+  flex-shrink: 0;
 }
 
 .search-overlay__input {
-  width: 100%;
+  flex: 1;
   background: transparent;
   border: none;
-  border-bottom: 2px solid var(--color-text-dark);
-  padding: 0.75rem 2.5rem 0.75rem 0.5rem;
-  font-family: var(--font-serif);
-  font-size: 1.25rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
   color: var(--color-text-dark);
+  outline: none;
+  padding: 0.4rem 0;
 }
 
-.search-overlay__input:focus {
-  outline: none;
-  border-bottom-color: var(--color-accent);
+.search-overlay__input::placeholder {
+  color: #888;
+  font-size: 0.92rem;
+}
+
+.search-overlay__clear {
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  color: #555;
+  font-size: 1.1rem;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.search-overlay__clear:hover {
+  background: rgba(0, 0, 0, 0.15);
+  color: #000;
+}
+
+.search-overlay__submit-btn {
+  background: var(--color-text-dark);
+  color: #ffffff;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.6rem 1.25rem;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 0.4rem;
+}
+
+.search-overlay__submit-btn:hover {
+  background: var(--color-accent);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .search-overlay__close {
-  position: absolute;
-  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #666;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.search-overlay__close:hover {
+  color: var(--color-accent-dark);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Trending suggestions */
+.search-overlay__suggestions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0 0.5rem;
+}
+
+.search-overlay__suggestions-label {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #888;
+}
+
+.search-overlay__chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.search-chip {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  padding: 0.35rem 0.85rem;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.search-chip:hover {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+/* Live Search Results */
+.search-live-results {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.search-results-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background: rgba(184, 152, 116, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  color: #555;
+}
+
+.search-view-all-link {
+  background: none;
+  border: none;
+  color: var(--color-accent-dark);
+  font-weight: 700;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.search-view-all-link:hover {
+  text-decoration: underline;
+  color: #000;
+}
+
+.search-result-row {
+  display: flex;
+  align-items: center;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.search-result-row:hover {
+  background-color: #faf8f5;
+}
+
+.search-result-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f0ede8;
+  flex-shrink: 0;
+  margin-right: 1rem;
+}
+
+.search-result-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.search-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-result-name {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  font-weight: 600;
   color: var(--color-text-dark);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-tags {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+}
+
+.search-tag-badge {
+  background: rgba(184, 152, 116, 0.15);
+  color: var(--color-accent-dark);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.search-tag-sub {
+  color: #777;
+  padding: 0.15rem 0;
+}
+
+.search-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+
+.search-result-price {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text-dark);
+}
+
+.search-result-view {
+  font-size: 0.8rem;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.search-results-footer {
+  padding: 0.75rem 1.25rem;
+  background: #faf8f5;
+  text-align: center;
+}
+
+.btn-search-all-results {
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-search-all-results:hover {
+  background: var(--color-accent-dark);
+}
+
+.search-results-empty {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.search-results-empty p {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: #333;
+  margin-bottom: 0.4rem;
+}
+
+.search-results-tip {
+  font-family: var(--font-sans) !important;
+  font-size: 0.82rem !important;
+  color: #777 !important;
+  margin-bottom: 1.25rem !important;
+}
+
+.btn-search-anyway {
+  background: var(--color-text-dark);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.4rem;
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-search-anyway:hover {
+  background: var(--color-accent);
 }
 
 /* Transitions */

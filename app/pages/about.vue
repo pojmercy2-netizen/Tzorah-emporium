@@ -8,12 +8,12 @@
       <img src="/hero_fragrances.jpg" alt="TZORAH EMPORIUM Scent &amp; Oil Apothecary" class="about-hero__bg" />
       <div class="about-hero__overlay"></div>
       <div class="about-hero__content">
-        <span class="about-hero__eyebrow">ABOUT TZORAH EMPORIUM</span>
+        <span class="about-hero__eyebrow">ABOUT TZORAH EMPORIUM &bull; EST. 2018</span>
         <h1 class="about-hero__title">The Alchemy of<br />Scents, Oils &amp;<br />Personal Luxuries.</h1>
         <div class="about-hero__divider"></div>
         <p class="about-hero__desc">
-          TZORAH EMPORIUM was founded on the belief that scent, self-care, and personal intimacy are profound art forms.
-          We bring together pure grade-A USA perfume oils, royal Arabian attars, authentic designer fragrances, pure steam-distilled botanicals, candlecraft supplies, and discreet adult wellness.
+          TZORAH EMPORIUM was established in 2018 on the belief that scent, self-care, and personal intimacy are profound art forms.
+          We bring together pure grade-A USA perfume oils, Middle eastern perfumes, authentic designer fragrances, pure steam-distilled botanicals, candlecraft supplies, and discreet adult wellness.
         </p>
         <NuxtLink to="/shop" class="about-btn about-btn--outline-light">EXPLORE THE STORE</NuxtLink>
       </div>

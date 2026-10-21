@@ -161,7 +161,7 @@
                 <img :src="item.image" :alt="item.name" />
               </div>
               <p class="wishlist-card__name">{{ item.name }}</p>
-              <p class="wishlist-card__price">₦{{ item.price.toLocaleString() }}</p>
+              <p class="wishlist-card__price">{{ item.priceFormatted || ('₦' + Number(item.price || 0).toLocaleString()) }}</p>
               <button class="wishlist-card__add" @click="addWishlistToCart(item)">ADD TO BAG</button>
             </div>
           </div>
@@ -216,15 +216,37 @@
       <div v-else-if="activeTab === 'orders'" class="tab-content">
         <div class="profile-section">
           <div class="orders-tab-header">
-            <h3 class="tab-section-title">Order History</h3>
-            <!-- Filter tabs -->
-            <div class="order-filters">
+            <div class="orders-tab-header__left">
+              <h3 class="tab-section-title">Order History</h3>
+              <span v-if="orders.length > 0" class="orders-count-badge">{{ orders.length }}</span>
+            </div>
+            
+            <div class="orders-tab-header__right">
+              <!-- Clear All Orders Button -->
               <button
-                v-for="f in orderFilters"
-                :key="f.key"
-                :class="['order-filter-btn', { 'order-filter-btn--active': orderFilter === f.key }]"
-                @click="orderFilter = f.key"
-              >{{ f.label }}</button>
+                v-if="orders.length > 0"
+                class="btn-clear-history"
+                @click="confirmClearAllOrders"
+                title="Clear all orders from history"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                <span>Clear Order History</span>
+              </button>
+
+              <!-- Filter tabs -->
+              <div class="order-filters">
+                <button
+                  v-for="f in orderFilters"
+                  :key="f.key"
+                  :class="['order-filter-btn', { 'order-filter-btn--active': orderFilter === f.key }]"
+                  @click="orderFilter = f.key"
+                >{{ f.label }}</button>
+              </div>
             </div>
           </div>
 
@@ -256,6 +278,17 @@
                   <span :class="['payment-badge', order.payment_status === 'Paid' ? 'payment-badge--paid' : 'payment-badge--unpaid']">
                     {{ order.payment_status === 'Paid' ? '✓ PAID & CONFIRMED' : '⏳ PENDING ADMIN VERIFICATION' }}
                   </span>
+                  <button
+                    class="btn-order-delete"
+                    @click.stop="confirmDeleteOrder(order)"
+                    title="Remove this order from history"
+                    aria-label="Remove order from history"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
                 </div>
               </div>
 
@@ -335,7 +368,7 @@
               </div>
               <div class="wishlist-full-card__details">
                 <p class="wishlist-full-card__name">{{ item.name }}</p>
-                <p class="wishlist-full-card__price">₦{{ item.price.toLocaleString() }}</p>
+                <p class="wishlist-full-card__price">{{ item.priceFormatted || ('₦' + Number(item.price || 0).toLocaleString()) }}</p>
                 <button class="wishlist-full-card__add" @click="addWishlistToCart(item)">ADD TO BAG</button>
               </div>
             </div>
@@ -345,29 +378,44 @@
 
       <!-- ══ SETTINGS TAB ══ -->
       <div v-else-if="activeTab === 'settings'" class="tab-content">
+
+        <!-- Settings page header -->
+        <div class="settings-page-header">
+          <h2 class="settings-page-title">Account Settings</h2>
+          <p class="settings-page-sub">Manage your personal details, addresses and preferences.</p>
+        </div>
+
         <div class="settings-grid">
 
           <!-- Personal Info -->
           <div class="settings-card">
-            <h4 class="settings-card__title">Personal Information</h4>
+            <div class="settings-card__header">
+              <div class="settings-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div>
+                <h4 class="settings-card__title">Personal Information</h4>
+                <p class="settings-card__sub">Your name, email and contact details</p>
+              </div>
+            </div>
             <div class="settings-form">
               <div class="settings-form__row">
                 <div class="settings-form__group">
-                  <label>First Name</label>
-                  <input v-model="user.firstName" type="text" placeholder="First name" />
+                  <label for="s-firstname">First Name</label>
+                  <input id="s-firstname" v-model="user.firstName" type="text" placeholder="First name" autocomplete="given-name" />
                 </div>
                 <div class="settings-form__group">
-                  <label>Last Name</label>
-                  <input v-model="user.lastName" type="text" placeholder="Last name" />
+                  <label for="s-lastname">Last Name</label>
+                  <input id="s-lastname" v-model="user.lastName" type="text" placeholder="Last name" autocomplete="family-name" />
                 </div>
               </div>
               <div class="settings-form__group">
-                <label>Email Address</label>
-                <input v-model="user.email" type="email" placeholder="you@example.com" />
+                <label for="s-email">Email Address</label>
+                <input id="s-email" v-model="user.email" type="email" placeholder="you@example.com" autocomplete="email" />
               </div>
               <div class="settings-form__group">
-                <label>Phone Number</label>
-                <input v-model="user.phone" type="tel" placeholder="+234 800 000 0000" />
+                <label for="s-phone">Phone Number</label>
+                <input id="s-phone" v-model="user.phone" type="tel" placeholder="+234 800 000 0000" autocomplete="tel" />
               </div>
               <button class="settings-save-btn" @click="saveProfile">SAVE CHANGES</button>
             </div>
@@ -375,25 +423,33 @@
 
           <!-- Shipping Address -->
           <div class="settings-card">
-            <h4 class="settings-card__title">Default Shipping Address</h4>
+            <div class="settings-card__header">
+              <div class="settings-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div>
+                <h4 class="settings-card__title">Shipping Address</h4>
+                <p class="settings-card__sub">Your default delivery location</p>
+              </div>
+            </div>
             <div class="settings-form">
               <div class="settings-form__group">
-                <label>Street Address</label>
-                <input v-model="user.address.street" type="text" placeholder="123 Fashion Street" />
+                <label for="s-street">Street Address</label>
+                <input id="s-street" v-model="user.address.street" type="text" placeholder="123 Fashion Street" autocomplete="street-address" />
               </div>
               <div class="settings-form__row">
                 <div class="settings-form__group">
-                  <label>City</label>
-                  <input v-model="user.address.city" type="text" placeholder="Lagos" />
+                  <label for="s-city">City</label>
+                  <input id="s-city" v-model="user.address.city" type="text" placeholder="Lagos" autocomplete="address-level2" />
                 </div>
                 <div class="settings-form__group">
-                  <label>State</label>
-                  <input v-model="user.address.state" type="text" placeholder="Lagos State" />
+                  <label for="s-state">State</label>
+                  <input id="s-state" v-model="user.address.state" type="text" placeholder="Lagos State" autocomplete="address-level1" />
                 </div>
               </div>
               <div class="settings-form__group">
-                <label>Country</label>
-                <input v-model="user.address.country" type="text" placeholder="Nigeria" />
+                <label for="s-country">Country</label>
+                <input id="s-country" v-model="user.address.country" type="text" placeholder="Nigeria" autocomplete="country-name" />
               </div>
               <button class="settings-save-btn" @click="saveProfile">SAVE ADDRESS</button>
             </div>
@@ -401,19 +457,27 @@
 
           <!-- Change Password -->
           <div class="settings-card">
-            <h4 class="settings-card__title">Change Password</h4>
+            <div class="settings-card__header">
+              <div class="settings-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <div>
+                <h4 class="settings-card__title">Change Password</h4>
+                <p class="settings-card__sub">Keep your account secure</p>
+              </div>
+            </div>
             <div class="settings-form">
               <div class="settings-form__group">
-                <label>Current Password</label>
-                <input v-model="passwords.current" type="password" placeholder="••••••••" />
+                <label for="s-curpass">Current Password</label>
+                <input id="s-curpass" v-model="passwords.current" type="password" placeholder="••••••••" autocomplete="current-password" />
               </div>
               <div class="settings-form__group">
-                <label>New Password</label>
-                <input v-model="passwords.new" type="password" placeholder="••••••••" />
+                <label for="s-newpass">New Password</label>
+                <input id="s-newpass" v-model="passwords.new" type="password" placeholder="••••••••" autocomplete="new-password" />
               </div>
               <div class="settings-form__group">
-                <label>Confirm New Password</label>
-                <input v-model="passwords.confirm" type="password" placeholder="••••••••" />
+                <label for="s-confpass">Confirm New Password</label>
+                <input id="s-confpass" v-model="passwords.confirm" type="password" placeholder="••••••••" autocomplete="new-password" />
               </div>
               <button class="settings-save-btn" @click="changePassword">UPDATE PASSWORD</button>
             </div>
@@ -421,7 +485,15 @@
 
           <!-- Notifications -->
           <div class="settings-card">
-            <h4 class="settings-card__title">Notification Preferences</h4>
+            <div class="settings-card__header">
+              <div class="settings-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              </div>
+              <div>
+                <h4 class="settings-card__title">Notifications</h4>
+                <p class="settings-card__sub">Choose what updates you receive</p>
+              </div>
+            </div>
             <div class="notifications-list">
               <label v-for="pref in notifPrefs" :key="pref.id" class="notif-row">
                 <div class="notif-row__info">
@@ -433,15 +505,33 @@
                 </div>
               </label>
             </div>
-            <button class="settings-save-btn" style="margin-top:1.25rem" @click="saveProfile">SAVE PREFERENCES</button>
+            <button class="settings-save-btn settings-save-btn--mt" @click="saveProfile">SAVE PREFERENCES</button>
           </div>
 
           <!-- Danger Zone -->
-          <div class="settings-card settings-card--danger">
-            <h4 class="settings-card__title settings-card__title--danger">Account</h4>
-            <p class="settings-danger-desc">Signing out will clear your local session. Your orders and history are always saved to your account.</p>
+          <div class="settings-card settings-card--danger settings-card--full">
+            <div class="settings-card__header">
+              <div class="settings-card__icon settings-card__icon--danger">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              </div>
+              <div>
+                <h4 class="settings-card__title settings-card__title--danger">Account & Data</h4>
+                <p class="settings-card__sub">Clear your stored purchase history or end your active session.</p>
+              </div>
+            </div>
             <div class="settings-danger-btns">
-              <button class="danger-btn danger-btn--outline" @click="signOut">SIGN OUT</button>
+              <button
+                v-if="orders.length > 0"
+                class="danger-btn danger-btn--red"
+                @click="confirmClearAllOrders"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                CLEAR ORDER HISTORY
+              </button>
+              <button class="danger-btn danger-btn--outline" @click="signOut">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                SIGN OUT
+              </button>
             </div>
           </div>
 
@@ -501,11 +591,48 @@
       </div>
     </Transition>
 
+    <!-- ════════════════════════════════════════════════════ -->
+    <!--  CLEAR ORDERS CONFIRMATION MODAL                     -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <Transition name="modal">
+      <div v-if="showClearOrdersModal" class="confirm-modal-overlay" @click.self="showClearOrdersModal = false">
+        <div class="confirm-modal">
+          <div class="confirm-modal__icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </div>
+          <h3 class="confirm-modal__title">
+            {{ orderToDelete ? `Remove Order #${orderToDelete.id}?` : 'Clear All Order History?' }}
+          </h3>
+          <p class="confirm-modal__desc">
+            {{ orderToDelete 
+                ? `Are you sure you want to remove Order #${orderToDelete.id} from your account history? This action cannot be undone.` 
+                : `Are you sure you want to clear all ${orders.length} order records from your history? This action cannot be undone.` 
+            }}
+          </p>
+          <div class="confirm-modal__actions">
+            <button class="confirm-modal__btn confirm-modal__btn--cancel" @click="showClearOrdersModal = false" :disabled="isClearingOrders">
+              Cancel
+            </button>
+            <button class="confirm-modal__btn confirm-modal__btn--danger" @click="handleClearOrders" :disabled="isClearingOrders">
+              <span v-if="isClearingOrders">Clearing...</span>
+              <span v-else>{{ orderToDelete ? 'Delete Order' : 'Yes, Clear All' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 
 definePageMeta({ middleware: 'auth' })
@@ -515,6 +642,7 @@ useHead({
   meta: [{ name: 'description', content: 'Manage your TZORAH EMPORIUM account, orders, wishlist and settings.' }]
 })
 
+const route = useRoute()
 const { currentUser, logout: authLogout } = useAuth()
 const userToken = useCookie('userToken')
 const cartCount = useState('cartCount', () => 0)
@@ -533,7 +661,14 @@ const tabs = [
   { id: 'wishlist', label: 'Wishlist',  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' },
   { id: 'settings', label: 'Settings',  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
 ]
-const activeTab = ref('overview')
+const initialTab = route.query.tab && tabs.some(t => t.id === route.query.tab) ? String(route.query.tab) : 'overview'
+const activeTab = ref(initialTab)
+
+watch(() => route.query.tab, (newTab) => {
+  if (newTab && tabs.some(t => t.id === newTab)) {
+    activeTab.value = String(newTab)
+  }
+})
 
 // ─── User Data ──────────────────────────────────────────
 const user = ref({
@@ -621,25 +756,66 @@ const deliveredCount = computed(() =>
   orders.value.filter(o => o.status === 'Delivered').length
 )
 
-// ─── Wishlist (localStorage-persisted) ──────────────────
-const wishlistItems = ref([])
+// ─── Clear / Delete Orders ──────────────────────────────
+const isClearingOrders = ref(false)
+const showClearOrdersModal = ref(false)
+const orderToDelete = ref(null)
 
-const loadWishlist = () => {
+const confirmClearAllOrders = () => {
+  orderToDelete.value = null
+  showClearOrdersModal.value = true
+}
+
+const confirmDeleteOrder = (order) => {
+  orderToDelete.value = order
+  showClearOrdersModal.value = true
+}
+
+const handleClearOrders = async () => {
+  if (!userToken.value) return
+  isClearingOrders.value = true
   try {
-    const stored = localStorage.getItem('elk_wishlist')
-    if (stored) wishlistItems.value = JSON.parse(stored)
-  } catch {}
-}
-const saveWishlist = () => {
-  try { localStorage.setItem('elk_wishlist', JSON.stringify(wishlistItems.value)) } catch {}
+    const url = orderToDelete.value
+      ? `${getApiUrl()}/account/orders?id=${orderToDelete.value.id}`
+      : `${getApiUrl()}/account/orders`
+
+    await $fetch(url, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${userToken.value}` }
+    })
+
+    if (orderToDelete.value) {
+      const removedId = orderToDelete.value.id
+      orders.value = orders.value.filter(o => o.id !== removedId)
+      if (selectedOrder.value?.id === removedId) {
+        selectedOrder.value = null
+      }
+      toasts.value.push({ id: Date.now(), message: `✓ Order #${removedId} removed from history.` })
+    } else {
+      orders.value = []
+      selectedOrder.value = null
+      toasts.value.push({ id: Date.now(), message: '✓ Order history cleared successfully.' })
+    }
+    showClearOrdersModal.value = false
+    orderToDelete.value = null
+  } catch (err) {
+    console.error('Failed to clear orders:', err)
+    toasts.value.push({
+      id: Date.now(),
+      message: `❌ ${err?.data?.message || err?.message || 'Failed to clear order history'}`
+    })
+  } finally {
+    isClearingOrders.value = false
+  }
 }
 
-onMounted(loadWishlist)
+// ─── Wishlist (shared reactive & localStorage-persisted) ──
+const { wishlistItems, removeFromWishlist, loadWishlist: initWishlist } = useWishlist()
+
+onMounted(initWishlist)
 
 const removeWishlistItem = (id) => {
-  wishlistItems.value = wishlistItems.value.filter(i => i.id !== id)
-  saveWishlist()
-  showToast('Removed from wishlist.')
+  removeFromWishlist(id)
 }
 
 const addWishlistToCart = (item) => {
@@ -939,7 +1115,75 @@ const formatDate = (dateStr) => {
 .payment-badge--failed { background: #fde8e8; color: #c0392b; }
 
 /* ─── Full Orders List ────────────────────────── */
-.orders-tab-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+.orders-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.orders-tab-header__left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.orders-count-badge {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--color-text-dark);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+}
+.orders-tab-header__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.btn-clear-history {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: #dc2626;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.42rem 0.85rem;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-clear-history:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+.btn-order-delete {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #9ca3af;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 0.25rem;
+}
+.btn-order-delete:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
 .order-filters { display: flex; gap: 0.4rem; }
 .order-filter-btn {
   font-family: var(--font-sans); font-size: 0.68rem; font-weight: 700;
@@ -1210,6 +1454,93 @@ const formatDate = (dateStr) => {
 .modal-summary__row { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--color-text-muted); }
 .modal-summary__row--total { font-size: 0.95rem; font-weight: 800; color: var(--color-text-dark); }
 
+/* ─── Confirmation Modal ────────────────────── */
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.confirm-modal {
+  background: #fff;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 440px;
+  padding: 2rem;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.confirm-modal__icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+.confirm-modal__title {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--color-text-dark);
+  margin-bottom: 0.5rem;
+}
+.confirm-modal__desc {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  margin-bottom: 1.75rem;
+}
+.confirm-modal__actions {
+  display: flex;
+  gap: 0.85rem;
+  width: 100%;
+}
+.confirm-modal__btn {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+.confirm-modal__btn--cancel {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+.confirm-modal__btn--cancel:hover:not(:disabled) {
+  background: #e5e7eb;
+  color: #111827;
+}
+.confirm-modal__btn--danger {
+  background: #dc2626;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+}
+.confirm-modal__btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+.confirm-modal__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ─── Modal Transitions ───────────────────────── */
 .modal-enter-active { animation: modal-in 0.22s ease; }
 .modal-leave-active { animation: modal-in 0.18s ease reverse; }
@@ -1218,19 +1549,275 @@ const formatDate = (dateStr) => {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* ─── Settings Page Header ─────────────────────── */
+.settings-page-header {
+  margin-bottom: 1.5rem;
+}
+.settings-page-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--color-text-dark);
+  margin-bottom: 0.25rem;
+}
+.settings-page-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* ─── Settings Grid ────────────────────────────── */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+.settings-card--full {
+  grid-column: 1 / -1;
+}
+
+/* ─── Settings Card ────────────────────────────── */
+.settings-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.settings-card--danger {
+  border: 1px solid rgba(192,57,43,0.15);
+}
+.settings-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 1.35rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0ede8;
+}
+.settings-card__icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  background: #f5f1eb;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-dark);
+}
+.settings-card__icon--danger {
+  background: #fef0ef;
+  color: #c0392b;
+}
+.settings-card__title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: var(--color-text-dark);
+  text-transform: uppercase;
+  margin-bottom: 0.15rem;
+  line-height: 1.3;
+}
+.settings-card__title--danger { color: #c0392b; }
+.settings-card__sub {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* ─── Settings Form ────────────────────────────── */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.settings-form__row {
+  display: flex;
+  gap: 0.75rem;
+}
+.settings-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 0;
+}
+.settings-form__group label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+.settings-form__group input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  border: 1.5px solid #d8d3cc;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-family: var(--font-sans);
+  color: var(--color-text-dark);
+  background: #faf9f7;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+}
+.settings-form__group input:focus {
+  border-color: var(--color-text-dark);
+  box-shadow: 0 0 0 3px rgba(26,26,26,0.06);
+}
+.settings-form__group input::placeholder {
+  color: #bfb9b0;
+}
+.settings-save-btn {
+  background: var(--color-text-dark);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  transition: opacity 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+.settings-save-btn--mt { margin-top: 1.25rem; }
+.settings-save-btn:hover { opacity: 0.82; transform: translateY(-1px); }
+.settings-save-btn:active { transform: translateY(0); }
+
+/* Notifications */
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.notif-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f5f1eb;
+}
+.notif-row:last-child { border-bottom: none; }
+.notif-row__info { flex: 1; min-width: 0; }
+.notif-row__title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+.notif-row__desc {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 0.1rem;
+}
+.notif-toggle {
+  width: 42px;
+  height: 24px;
+  background: #d8d3cc;
+  border-radius: 99px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.25s;
+  flex-shrink: 0;
+}
+.notif-toggle--on { background: var(--color-text-dark); }
+.notif-toggle__dot {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.25s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.notif-toggle--on .notif-toggle__dot { transform: translateX(18px); }
+
+/* Danger zone */
+.settings-danger-desc { font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1rem; line-height: 1.5; }
+.settings-danger-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.danger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.75rem 1.2rem;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.danger-btn--outline {
+  background: transparent;
+  border: 1.5px solid rgba(26,26,26,0.25);
+  color: var(--color-text-dark);
+}
+.danger-btn--outline:hover {
+  background: var(--color-text-dark);
+  color: #fff;
+  border-color: var(--color-text-dark);
+}
+.danger-btn--red {
+  background: #fef2f2;
+  border: 1.5px solid rgba(220,38,38,0.3);
+  color: #dc2626;
+}
+.danger-btn--red:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+}
+
 /* ─── Responsive ──────────────────────────────── */
+@media (max-width: 900px) {
+  .settings-grid { grid-template-columns: 1fr; }
+  .settings-card--full { grid-column: 1; }
+}
 @media (max-width: 768px) {
   .profile-stats { gap: 1.25rem; padding: 1rem; }
   .wishlist-preview-grid, .wishlist-grid { grid-template-columns: repeat(2, 1fr); }
-  .settings-grid { grid-template-columns: 1fr; }
   .account-cards { grid-template-columns: 1fr; }
   .welcome-banner { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
   .order-filters { flex-wrap: wrap; }
+  .orders-tab-header { flex-direction: column; align-items: flex-start; }
+  .orders-tab-header__right { width: 100%; }
+  .btn-clear-history { font-size: 0.65rem; }
+  .settings-card { padding: 1.15rem; }
+  .settings-page-title { font-size: 1.25rem; }
+  .settings-form__row { flex-direction: column; gap: 0.85rem; }
+  .settings-save-btn { align-self: stretch; text-align: center; }
+  .settings-danger-btns { flex-direction: column; }
+  .danger-btn { justify-content: center; width: 100%; }
+  .confirm-modal { padding: 1.5rem; }
 }
 @media (max-width: 480px) {
   .profile-hero__name { font-size: 1.4rem; }
   .profile-stat__num { font-size: 1.1rem; }
   .wishlist-preview-grid { grid-template-columns: repeat(2, 1fr); }
   .modal-box { border-radius: 12px; }
+  .settings-card { padding: 1rem; border-radius: 10px; }
+  .settings-card__icon { width: 34px; height: 34px; }
+  .profile-tabs-bar { position: relative; top: 0; }
+  .tab-content { padding: 0 0.5rem; }
+  .notif-toggle { width: 38px; height: 22px; }
+  .notif-toggle__dot { width: 16px; height: 16px; }
+  .notif-toggle--on .notif-toggle__dot { transform: translateX(16px); }
+  .orders-tab-header__right { flex-direction: column; align-items: flex-start; }
+  .confirm-modal__actions { flex-direction: column; }
+  .confirm-modal__title { font-size: 1.15rem; }
 }
 </style>

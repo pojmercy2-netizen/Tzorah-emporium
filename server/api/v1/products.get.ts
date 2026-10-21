@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const categoryFilter = q.category as string | undefined
   const subcategoryFilter = q.subcategory as string | undefined
   const collectionIdFilter = q.collection_id as string | undefined
+  const searchFilter = (q.search || q.q) as string | undefined
 
   let sql = `
     SELECT 
@@ -32,6 +33,12 @@ export default defineEventHandler(async (event) => {
   if (collectionIdFilter) {
     sql += ' AND p.collection_id = ?'
     params.push(parseInt(collectionIdFilter, 10))
+  }
+
+  if (searchFilter && searchFilter.trim()) {
+    sql += ' AND (p.name ILIKE ? OR p.description ILIKE ? OR c.name ILIKE ? OR p.subcategory ILIKE ?)'
+    const term = `%${searchFilter.trim()}%`
+    params.push(term, term, term, term)
   }
 
   sql += ' ORDER BY p.id ASC'
@@ -78,6 +85,16 @@ export default defineEventHandler(async (event) => {
 
     if (subcategoryFilter && subcategoryFilter.toUpperCase() !== 'ALL') {
       products = products.filter(p => p.subcategory.toUpperCase() === subcategoryFilter.toUpperCase())
+    }
+
+    if (searchFilter && searchFilter.trim()) {
+      const term = searchFilter.trim().toLowerCase()
+      products = products.filter(p =>
+        (p.name || '').toLowerCase().includes(term) ||
+        (p.description || '').toLowerCase().includes(term) ||
+        (p.category || '').toLowerCase().includes(term) ||
+        (p.subcategory || '').toLowerCase().includes(term)
+      )
     }
 
     return products

@@ -180,7 +180,7 @@
                   <p class="co-radio-row__name">{{ method.name }}</p>
                   <p class="co-radio-row__sub">{{ method.days }}</p>
                 </div>
-                <span class="co-radio-row__price">{{ method.price === 0 ? 'FREE' : currencySymbol + method.price.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+                <span class="co-radio-row__price co-dispatch-tag">Determined by Dispatch Rider</span>
               </label>
 
               <!-- Delivery Information Policy Notice -->
@@ -304,7 +304,11 @@
                 </div>
                 <div class="co-summary__item-details">
                   <p class="co-summary__item-name">{{ item.name }}</p>
-                  <p class="co-summary__item-meta">{{ capitalize(item.selectedColor || 'Black') }} / {{ item.selectedSize || 'M' }}</p>
+                  <p class="co-summary__item-meta" v-if="item.selectedColor || item.size || item.selectedSize">
+                    <span v-if="item.selectedColor">{{ capitalize(item.selectedColor) }}</span>
+                    <span v-if="item.selectedColor && (item.size || item.selectedSize)"> &bull; </span>
+                    <span v-if="item.size || item.selectedSize">{{ item.size || item.selectedSize }}</span>
+                  </p>
                   <p class="co-summary__item-qty">Qty: {{ item.quantity }}</p>
                 </div>
                 <p class="co-summary__item-price">{{ currencySymbol }}{{ (item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</p>
@@ -339,14 +343,7 @@
               </div>
               <div class="co-summary__row">
                 <span>Shipping</span>
-                <span :class="shippingCost === 0 ? 'co-free' : ''">{{ shippingCost === 0 ? 'FREE' : currencySymbol + shippingCost.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
-              </div>
-              <div class="co-summary__row">
-                <span class="co-tax-label">
-                  Estimated Tax
-                  <span class="co-tax-info" title="Based on your shipping address">ⓘ</span>
-                </span>
-                <span>{{ currencySymbol }}{{ estimatedTax.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+                <span class="co-dispatch-tag">Determined by dispatch rider</span>
               </div>
             </div>
 
@@ -386,16 +383,7 @@
 
       <!-- ═══ TRUST BADGES ═══ -->
       <div class="co-trust">
-        <div class="co-trust__item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="1" y="3" width="15" height="13"></rect>
-            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-            <circle cx="5.5" cy="18.5" r="2.5"></circle>
-            <circle cx="18.5" cy="18.5" r="2.5"></circle>
-          </svg>
-          <strong>FREE SHIPPING</strong>
-          <span>On all orders over $100.</span>
-        </div>
+
         <div class="co-trust__item">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="17 1 21 5 17 9"></polyline>
@@ -569,8 +557,6 @@ const cartCount = useState('cartCount', () => 0)
 const cartItems = useState('cartItems', () => [])
 const toasts = useState('toasts', () => [])
 
-const TAX_RATE = 0.09
-
 // ─── Address ──────────────────────────────────────
 const editingAddress = ref(false)
 const address = ref({
@@ -684,14 +670,10 @@ const currencySymbol = computed(() => {
 })
 
 // ─── Shipping Methods ──────────────────────────────
-const shippingMethods = computed(() => {
-  const isFree = subtotal.value >= freeShippingThreshold.value
-  const stdPrice = isFree ? 0 : standardShippingFee.value
-  return [
-    { id: 'standard', name: 'Standard Shipping', days: '5–7 Business Days', price: stdPrice },
-    { id: 'express', name: 'Express Shipping', days: '2–3 Business Days', price: expressShippingFee.value }
-  ]
-})
+const shippingMethods = computed(() => [
+  { id: 'standard', name: 'Standard Delivery', days: 'Port Harcourt & Nationwide (24–48h handover to rider)' },
+  { id: 'express', name: 'Express Same-Day Dispatch', days: 'Port Harcourt only (Priority rider dispatch)' }
+])
 const selectedShipping = ref('standard')
 
 // ─── Promo Code ────────────────────────────────────
@@ -708,12 +690,8 @@ const applyPromo = () => {
 const subtotal = computed(() =>
   cartItems.value.reduce((sum: any, i: any) => sum + i.price * i.quantity, 0)
 )
-const shippingCost = computed(() => {
-  const method = shippingMethods.value.find(m => m.id === selectedShipping.value)
-  return method ? method.price : 0
-})
-const estimatedTax = computed(() => subtotal.value * TAX_RATE)
-const estimatedTotal = computed(() => subtotal.value + shippingCost.value + estimatedTax.value)
+const shippingCost = computed(() => 0)
+const estimatedTotal = computed(() => subtotal.value)
 
 // ─── Helpers ───────────────────────────────────────
 const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
@@ -1286,6 +1264,7 @@ const placeOrder = async () => {
 .co-tax-label { display: flex; align-items: center; gap: 0.3rem; }
 .co-tax-info { opacity: 0.5; font-size: 0.85rem; cursor: help; }
 .co-free { color: #2d8a4e; font-weight: 700; }
+.co-dispatch-tag { color: #c8973a; font-weight: 600; font-size: 0.78rem; font-style: italic; }
 .co-summary__total {
   display: flex;
   justify-content: space-between;

@@ -24,6 +24,18 @@
               {{ product.subcategory || product.category }}
             </span>
 
+            <!-- Heart Wishlist Toggle -->
+            <button
+              class="product-card__wishlist"
+              :class="{ 'product-card__wishlist--active': isWishlisted(product.id) }"
+              @click.stop="toggleWishlist(product)"
+              aria-label="Add to Wishlist"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </button>
+
             <div class="product-card__overlay">
               <button class="product-card__quick-add" @click="addToCart(product)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="quick-add-icon">
@@ -49,23 +61,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
+const { isWishlisted, toggleWishlist, loadWishlist } = useWishlist()
+
 const cartCount = useState('cartCount', () => 0)
 const cartItems = useState('cartItems', () => [])
 const { storeSettings } = useStoreSettings()
 
 const currencySymbol = computed(() => storeSettings.value.currency === 'NGN' ? '₦' : '$')
-
-// Initial fallback set of 8 products representing Or. Store categories
-const defaultProducts = [
-  { id: 'perf_usa_1', name: 'Baccarat Rouge 540 Pure Oil (USA)', price: 38500, image: '/images/products/perf_usa_1.png', category: 'PERFUMES', subcategory: 'USA Oil Perfumes' },
-  { id: 'perf_me_1', name: 'Lattafa Khamrah Royale EDP', price: 48000, image: '/images/products/perf_me_1.png', category: 'PERFUMES', subcategory: 'Middle Eastern' },
-  { id: 'perf_des_1', name: 'Bleu de Chanel Eau de Parfum', price: 185000, image: '/images/products/perf_des_1.png', category: 'PERFUMES', subcategory: 'Authentic Designer' },
-  { id: 'oil_frag_1', name: 'Golden Amber & Musk Fragrance Oil', price: 18500, image: '/images/products/oil_frag_1.png', category: 'OILS', subcategory: 'Fragrance Oils' },
-  { id: 'oil_ess_1', name: '100% Pure French Lavender Oil', price: 12500, image: '/images/products/oil_ess_1.png', category: 'OILS', subcategory: 'Essential Oils' },
-  { id: 'oil_nat_1', name: 'Cold-Pressed Golden Jojoba Oil', price: 15000, image: '/images/products/oil_nat_1.png', category: 'OILS', subcategory: 'Natural Oils' },
-  { id: 'candle_1', name: 'Golden Soy Wax Flakes (1kg)', price: 16500, image: '/images/products/candle_1.png', category: 'CANDLE ACCESSORIES', subcategory: 'Wax Flakes' },
-  { id: 'adult_toy_1', name: 'Whisper Luxe Ergonomic Wand', price: 38000, image: '/images/products/adult_toy_1.png', category: 'ADULT SECTION', subcategory: 'Adult Toys' }
-]
 
 const liveProducts = ref([])
 
@@ -97,16 +99,15 @@ const loadLiveProducts = async () => {
   }
 }
 
-onMounted(loadLiveProducts)
+onMounted(() => {
+  loadWishlist()
+  loadLiveProducts()
+})
 
-// Computed list always displaying 8 items
+// Computed list displaying 40% of all shop products (rounded to nearest whole number)
 const displayProducts = computed(() => {
-  let list = liveProducts.value.length > 0 ? liveProducts.value : defaultProducts.map(mapProduct)
-  if (list.length < 8) {
-    const pad = defaultProducts.slice(list.length, 8).map(mapProduct)
-    list = [...list, ...pad]
-  }
-  return list.slice(0, 8)
+  const count = Math.max(1, Math.round(liveProducts.value.length * 0.4))
+  return liveProducts.value.slice(0, count)
 })
 
 const addToCart = (product) => {
@@ -179,6 +180,39 @@ const addToCart = (product) => {
   text-transform: uppercase;
   z-index: 2;
   border: 1px solid rgba(218, 178, 126, 0.3);
+}
+
+.product-card__wishlist {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  background-color: rgba(255, 255, 255, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--color-text-dark);
+  z-index: 3;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.product-card__wishlist:hover {
+  background-color: #ffffff;
+  color: #e63946;
+  transform: scale(1.1);
+}
+
+.product-card__wishlist--active {
+  background-color: #ffffff;
+  color: #e63946;
+}
+
+.product-card__wishlist--active svg {
+  fill: #e63946;
 }
 
 .product-card__img {

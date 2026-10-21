@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   // Ensure admin privileges
   await requireAdmin(event)
 
-  // Fetch all registered users and aggregate order statistics
+  // Fetch all registered users and guest purchasers with aggregated order statistics
   const usersRes = await query(`
     SELECT 
       u.id,
@@ -14,11 +14,32 @@ export default defineEventHandler(async (event) => {
       u.is_admin,
       u.created_at,
       COUNT(o.id) AS order_count,
-      COALESCE(SUM(CASE WHEN o.total_price IS NOT NULL THEN o.total_price ELSE 0 END), 0) AS total_spend
+      COALESCE(SUM(CASE WHEN o.total_price IS NOT NULL THEN o.total_price ELSE 0 END), 0) AS total_spend,
+      MAX(o.phone) AS phone,
+      MAX(o.shipping_address) AS shipping_address,
+      true AS is_registered
     FROM users u
     LEFT JOIN orders o ON LOWER(u.email) = LOWER(o.email)
     GROUP BY u.id, u.name, u.email, u.is_admin, u.created_at
-    ORDER BY u.created_at DESC
+
+    UNION ALL
+
+    SELECT 
+      (-1 * MIN(o.id)) AS id,
+      COALESCE(MAX(o.customer_name), 'Guest Client') AS name,
+      LOWER(o.email) AS email,
+      false AS is_admin,
+      MIN(o.created_at) AS created_at,
+      COUNT(o.id) AS order_count,
+      COALESCE(SUM(CASE WHEN o.total_price IS NOT NULL THEN o.total_price ELSE 0 END), 0) AS total_spend,
+      MAX(o.phone) AS phone,
+      MAX(o.shipping_address) AS shipping_address,
+      false AS is_registered
+    FROM orders o
+    WHERE LOWER(o.email) NOT IN (SELECT LOWER(email) FROM users)
+    GROUP BY LOWER(o.email)
+
+    ORDER BY created_at DESC
   `)
 
   // For each customer, also fetch their latest order/activity
@@ -48,8 +69,11 @@ export default defineEventHandler(async (event) => {
       id: row.id,
       name: row.name || 'Valued Client',
       email: row.email,
+      phone: row.phone || null,
+      shippingAddress: row.shipping_address || null,
       isAdmin: Boolean(row.is_admin),
       is_admin: Boolean(row.is_admin),
+      isRegistered: Boolean(row.is_registered),
       joinDate,
       orderCount: parseInt(row.order_count || '0', 10),
       totalSpend: parseFloat(row.total_spend || '0'),
@@ -59,3 +83,4 @@ export default defineEventHandler(async (event) => {
 
   return customers
 })
+

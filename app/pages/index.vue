@@ -2,6 +2,7 @@
   <div>
     <TheHero />
     <Features />
+    <VideoAdvertBanner />
     <NewArrivals />
     <HomeDelivery />
     <HomeAbout />

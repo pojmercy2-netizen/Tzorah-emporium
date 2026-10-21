@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { H3Event, createError, getHeader } from 'h3'
+import { H3Event, createError, getHeader, getCookie } from 'h3'
 import { query } from './db'
 
 export function hashPassword(password: string): string {
@@ -32,8 +32,16 @@ export function decodeToken(token: string): { sub: string } | null {
 }
 
 export async function getCurrentUser(event: H3Event) {
-  const authHeader = getHeader(event, 'Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  let token: string | null = null
+  const authHeader = getHeader(event, 'Authorization') || getHeader(event, 'authorization')
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7)
+  } else {
+    // Cookie fallback
+    token = getCookie(event, 'adminToken') || getCookie(event, 'userToken') || null
+  }
+
+  if (!token) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Unauthorized',
@@ -43,8 +51,6 @@ export async function getCurrentUser(event: H3Event) {
       }
     })
   }
-
-  const token = authHeader.substring(7)
   const decoded = decodeToken(token)
   if (!decoded || !decoded.sub) {
     throw createError({

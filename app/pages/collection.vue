@@ -75,8 +75,8 @@
             <!-- Heart Wishlist Toggle -->
             <button
               class="product-card__wishlist"
-              :class="{ 'product-card__wishlist--active': wishlisted.includes(product.id) }"
-              @click="toggleWishlist(product.id)"
+              :class="{ 'product-card__wishlist--active': isWishlisted(product.id) }"
+              @click="toggleWishlist(product)"
               aria-label="Add to Wishlist"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -116,12 +116,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 useHead({
   title: 'Our Collections | TZORAH EMPORIUM',
   meta: [{ name: 'description', content: 'Explore curated collections of authentic perfumes, botanical oils, candlecraft, pet care, and private adult wellness from TZORAH EMPORIUM.' }]
 })
+
+const { isWishlisted, toggleWishlist, loadWishlist } = useWishlist()
+onMounted(loadWishlist)
 
 const cartCount = useState('cartCount', () => 0)
 const cartItems = useState('cartItems', () => [])
@@ -159,17 +162,6 @@ const selectPillar = (p) => {
   activeCategory.value = 'ALL'
 }
 
-// ─── Wishlist ─────────────────────────────────────
-const wishlisted = ref([])
-const toggleWishlist = (id) => {
-  if (wishlisted.value.includes(id)) {
-    wishlisted.value = wishlisted.value.filter(i => i !== id)
-    showToast('Removed from wishlist.')
-  } else {
-    wishlisted.value.push(id)
-    showToast('Added to wishlist ♥')
-  }
-}
 
 const showToast = (message) => {
   toasts.value.push({ id: Date.now(), message })

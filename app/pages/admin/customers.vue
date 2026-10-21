@@ -4,15 +4,79 @@
     <div class="customers-header animate-fade-in">
       <div>
         <h1 class="page-title">Client Directory</h1>
-        <p class="page-subtitle">View purchase profiles, account metrics and lifetime values.</p>
+        <p class="page-subtitle">View purchase profiles, account metrics, registered users and lifetime values.</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-refresh" :class="{ 'btn-refresh--spinning': loading }" @click="fetchCustomers" :disabled="loading" title="Refresh client list">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+          </svg>
+          <span>{{ loading ? 'Updating...' : 'Refresh Directory' }}</span>
+        </button>
       </div>
     </div>
 
-    <!-- Filters Bar -->
+    <!-- Quick Metrics Overview -->
+    <div class="stats-overview-grid animate-fade-in">
+      <div class="stat-card">
+        <span class="stat-card__label">TOTAL CLIENTS</span>
+        <span class="stat-card__value font-mono">{{ totalClientsCount }}</span>
+        <span class="stat-card__sub">{{ registeredClientsCount }} registered accounts</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">TOTAL ORDERS</span>
+        <span class="stat-card__value font-mono">{{ totalOrdersCount }}</span>
+        <span class="stat-card__sub">Across all registered &amp; guest clients</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">TOTAL REVENUE</span>
+        <span class="stat-card__value font-mono text-gold">{{ formatCurrency(totalRevenue) }}</span>
+        <span class="stat-card__sub">Aggregate lifetime spend</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">VIP MEMBERS</span>
+        <span class="stat-card__value font-mono">{{ vipClientsCount }}</span>
+        <span class="stat-card__sub">Gold, Platinum &amp; VIP Black</span>
+      </div>
+    </div>
+
+    <!-- Filters Bar & Tabs -->
     <div class="filters-bar animate-fade-in">
+      <div class="filter-tabs">
+        <button
+          class="filter-tab"
+          :class="{ 'filter-tab--active': currentTab === 'all' }"
+          @click="currentTab = 'all'"
+        >
+          All ({{ adminCustomers.length }})
+        </button>
+        <button
+          class="filter-tab"
+          :class="{ 'filter-tab--active': currentTab === 'registered' }"
+          @click="currentTab = 'registered'"
+        >
+          Registered Accounts ({{ registeredClientsCount }})
+        </button>
+        <button
+          class="filter-tab"
+          :class="{ 'filter-tab--active': currentTab === 'vip' }"
+          @click="currentTab = 'vip'"
+        >
+          VIPs ({{ vipClientsCount }})
+        </button>
+        <button
+          class="filter-tab"
+          :class="{ 'filter-tab--active': currentTab === 'admins' }"
+          @click="currentTab = 'admins'"
+        >
+          Administrators ({{ adminUsersCount }})
+        </button>
+      </div>
+
       <div class="search-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input v-model="searchQuery" type="text" placeholder="Search clients by name, email..." class="search-input" />
+        <input v-model="searchQuery" type="text" placeholder="Search clients by name, email, phone..." class="search-input" />
+        <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''" title="Clear search">✕</button>
       </div>
     </div>
 
@@ -20,7 +84,11 @@
     <div class="dashboard-grid animate-fade-in">
       <!-- Directory Table -->
       <div class="admin-card span-8">
-        <h2 class="admin-card-title">ELITE REGISTRY</h2>
+        <div class="card-header-row">
+          <h2 class="admin-card-title">CLIENT REGISTRY</h2>
+          <span class="results-count-badge">{{ filteredCustomers.length }} {{ filteredCustomers.length === 1 ? 'client' : 'clients' }} shown</span>
+        </div>
+
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
@@ -33,8 +101,13 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="filteredCustomers.length === 0">
-                <td colspan="5" class="text-center-cell">No clients found matching the search criteria.</td>
+              <tr v-if="loading && adminCustomers.length === 0">
+                <td colspan="5" class="text-center-cell">Loading clients directory...</td>
+              </tr>
+              <tr v-else-if="filteredCustomers.length === 0">
+                <td colspan="5" class="text-center-cell">
+                  No clients found matching "{{ searchQuery || currentTab }}".
+                </td>
               </tr>
               <tr
                 v-for="customer in filteredCustomers"
@@ -49,15 +122,17 @@
                       <div class="client-name-row">
                         <span class="client-name">{{ customer.name }}</span>
                         <span v-if="customer.is_admin" class="badge-role badge-role--admin">ADMIN</span>
+                        <span v-else-if="customer.isRegistered === false" class="badge-role badge-role--guest">GUEST</span>
                         <span v-else class="badge-role badge-role--client">CLIENT</span>
                       </div>
                       <span class="client-email">{{ customer.email }}</span>
+                      <span v-if="customer.phone" class="client-phone font-mono">{{ customer.phone }}</span>
                     </div>
                   </div>
                 </td>
-                <td class="font-mono">{{ customer.joinDate }}</td>
+                <td class="font-mono text-muted">{{ customer.joinDate }}</td>
                 <td class="font-mono">{{ customer.orderCount }}</td>
-                <td class="font-semibold text-white">₦{{ customer.totalSpend.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</td>
+                <td class="font-semibold text-white">{{ formatCurrency(customer.totalSpend) }}</td>
                 <td>
                   <span :class="['badge-status', getStatusClass(customer.totalSpend)]">
                     {{ getVIPStatusLabel(customer.totalSpend) }}
@@ -84,17 +159,32 @@
           </div>
           <h3 class="profile-name-title">{{ selectedCustomer.name }}</h3>
           <p class="profile-email-sub">{{ selectedCustomer.email }}</p>
+
           <div class="profile-badges-row">
             <span class="profile-badge-vip" :style="{ backgroundColor: getVIPBadgeBg(selectedCustomer.totalSpend) }">
               {{ getVIPStatusLabel(selectedCustomer.totalSpend) }}
             </span>
             <span v-if="selectedCustomer.is_admin" class="badge-role badge-role--admin">ADMIN ACCESS</span>
-            <span v-else class="badge-role badge-role--client">STANDARD CLIENT</span>
+            <span v-else-if="selectedCustomer.isRegistered === false" class="badge-role badge-role--guest">GUEST CHECKOUT</span>
+            <span v-else class="badge-role badge-role--client">REGISTERED CLIENT</span>
+          </div>
+
+          <!-- Contact details if available -->
+          <div v-if="selectedCustomer.phone || selectedCustomer.shippingAddress" class="profile-contact-box">
+            <div v-if="selectedCustomer.phone" class="contact-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>{{ selectedCustomer.phone }}</span>
+            </div>
+            <div v-if="selectedCustomer.shippingAddress" class="contact-row">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>{{ selectedCustomer.shippingAddress }}</span>
+            </div>
           </div>
 
           <!-- Functional Actions -->
           <div class="customer-actions-group">
             <button
+              v-if="selectedCustomer.isRegistered !== false"
               class="btn-customer-action btn-customer-action--role"
               :class="{ 'btn-customer-action--revoke': selectedCustomer.is_admin }"
               :disabled="roleUpdating"
@@ -125,11 +215,11 @@
             </div>
             <div class="metric-item">
               <span class="metric-label">TOTAL SPENT</span>
-              <span class="metric-value font-mono text-gold">₦{{ selectedCustomer.totalSpend.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+              <span class="metric-value font-mono text-gold">{{ formatCurrency(selectedCustomer.totalSpend) }}</span>
             </div>
             <div class="metric-item">
               <span class="metric-label">AVERAGE ORDER</span>
-              <span class="metric-value font-mono">₦{{ (selectedCustomer.totalSpend / (selectedCustomer.orderCount || 1)).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+              <span class="metric-value font-mono">{{ formatCurrency((Number(selectedCustomer.totalSpend) || 0) / (Number(selectedCustomer.orderCount) || 1)) }}</span>
             </div>
             <div class="metric-item">
               <span class="metric-label">MEMBER SINCE</span>
@@ -145,7 +235,7 @@
               <div v-for="order in selectedCustomer.recentOrders" :key="order.id" class="timeline-event">
                 <span class="timeline-dot"></span>
                 <div class="timeline-info">
-                  <span class="event-title">Order #{{ order.id }} — ₦{{ order.total.toLocaleString() }}</span>
+                  <span class="event-title">Order #{{ order.id }} — {{ formatCurrency(order.total) }}</span>
                   <span class="event-time">{{ order.date }} • {{ order.status }}</span>
                 </div>
               </div>
@@ -183,18 +273,26 @@ const adminCustomers = ref([])
 const loading = ref(true)
 
 const searchQuery = ref('')
+const currentTab = ref('all') // 'all' | 'registered' | 'vip' | 'admins'
 const selectedCustomer = ref(null)
 
 const fetchCustomers = async () => {
-  if (!adminToken.value) return
   loading.value = true
   try {
-    const data = await $fetch('/api/v1/customers', {
-      headers: { Authorization: `Bearer ${adminToken.value}` }
-    })
+    const headers = {}
+    if (adminToken.value) {
+      headers.Authorization = `Bearer ${adminToken.value}`
+    }
+    const data = await $fetch('/api/v1/customers', { headers })
     adminCustomers.value = data || []
     if (adminCustomers.value.length > 0) {
-      selectedCustomer.value = adminCustomers.value[0]
+      if (selectedCustomer.value) {
+        selectedCustomer.value = adminCustomers.value.find(c => c.id === selectedCustomer.value.id) || adminCustomers.value[0]
+      } else {
+        selectedCustomer.value = adminCustomers.value[0]
+      }
+    } else {
+      selectedCustomer.value = null
     }
   } catch (err) {
     console.error('Failed to fetch customers:', err)
@@ -205,6 +303,54 @@ const fetchCustomers = async () => {
 
 onMounted(fetchCustomers)
 
+// KPI Computations
+const totalClientsCount = computed(() => adminCustomers.value.length)
+const registeredClientsCount = computed(() => adminCustomers.value.filter(c => c.isRegistered !== false).length)
+const adminUsersCount = computed(() => adminCustomers.value.filter(c => c.is_admin).length)
+const vipClientsCount = computed(() => adminCustomers.value.filter(c => (Number(c.totalSpend) || 0) >= 150000).length)
+const totalRevenue = computed(() => {
+  return adminCustomers.value.reduce((sum, c) => sum + (Number(c.totalSpend) || 0), 0)
+})
+const totalOrdersCount = computed(() => {
+  return adminCustomers.value.reduce((sum, c) => sum + (Number(c.orderCount) || 0), 0)
+})
+
+// Client selection
+const selectCustomer = (customer) => {
+  selectedCustomer.value = customer
+}
+
+// Helpers for VIP status and classes
+const getVIPStatusLabel = (spend = 0) => {
+  const amount = Number(spend) || 0
+  if (amount >= 500000) return 'VIP BLACK'
+  if (amount >= 150000) return 'PLATINUM'
+  if (amount > 0) return 'GOLD'
+  return 'NEW CLIENT'
+}
+
+const getStatusClass = (spend = 0) => {
+  const amount = Number(spend) || 0
+  if (amount >= 500000) return 'status-vip-black'
+  if (amount >= 150000) return 'status-vip-plat'
+  if (amount > 0) return 'status-vip-gold'
+  return 'status-new-client'
+}
+
+const getVIPBadgeBg = (spend = 0) => {
+  const amount = Number(spend) || 0
+  if (amount >= 500000) return '#000000'
+  if (amount >= 150000) return '#334155'
+  if (amount > 0) return '#b89874'
+  return 'rgba(255, 255, 255, 0.08)'
+}
+
+const formatCurrency = (val = 0) => {
+  const num = Number(val) || 0
+  return '₦' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+// Role toggle
 const roleUpdating = ref(false)
 const toastMessage = ref('')
 
@@ -216,7 +362,7 @@ const showToast = (msg) => {
 }
 
 const toggleAdminRole = async (customer) => {
-  if (!customer || !adminToken.value) return
+  if (!customer) return
   const newRole = !customer.is_admin
   const actionText = newRole ? 'promote to Administrator' : 'revoke Administrator access for'
   if (!confirm(`Are you sure you want to ${actionText} ${customer.name || customer.email}?`)) {
@@ -225,9 +371,13 @@ const toggleAdminRole = async (customer) => {
 
   roleUpdating.value = true
   try {
+    const headers = {}
+    if (adminToken.value) {
+      headers.Authorization = `Bearer ${adminToken.value}`
+    }
     await $fetch(`/api/v1/customers/${customer.id}/role`, {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${adminToken.value}` },
+      headers,
       body: { is_admin: newRole }
     })
     customer.is_admin = newRole
@@ -243,10 +393,21 @@ const toggleAdminRole = async (customer) => {
   }
 }
 
+// Filtered list
 const filteredCustomers = computed(() => {
+  const query = (searchQuery.value || '').toLowerCase().trim()
   return adminCustomers.value.filter(c => {
-    return (c.name || '').toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-           (c.email || '').toLowerCase().includes(searchQuery.value.toLowerCase())
+    // Tab filter
+    if (currentTab.value === 'registered' && c.isRegistered === false) return false
+    if (currentTab.value === 'vip' && (Number(c.totalSpend) || 0) < 150000) return false
+    if (currentTab.value === 'admins' && !c.is_admin) return false
+
+    // Search query
+    if (!query) return true
+    const matchName = (c.name || '').toLowerCase().includes(query)
+    const matchEmail = (c.email || '').toLowerCase().includes(query)
+    const matchPhone = (c.phone || '').toLowerCase().includes(query)
+    return matchName || matchEmail || matchPhone
   })
 })
 </script>
@@ -262,6 +423,8 @@ const filteredCustomers = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .page-title {
@@ -278,16 +441,140 @@ const filteredCustomers = computed(() => {
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* Filters */
-.filters-bar {
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-refresh {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  background-color: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.55rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background-color: #1a1a1a;
+  border-color: #b89874;
+  color: #b89874;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-refresh--spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Quick Metrics Cards */
+.stats-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background-color: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: #b89874;
+  opacity: 0.6;
+}
+
+.stat-card__label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+}
+
+.stat-card__value {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.stat-card__sub {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Filters Bar & Tabs */
+.filters-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filter-tabs {
+  display: flex;
+  background-color: #111111;
+  padding: 0.25rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 0.25rem;
+}
+
+.filter-tab {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.45rem 0.85rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+  color: #ffffff;
+}
+
+.filter-tab--active {
+  background-color: #202020;
+  color: #b89874;
+  font-weight: 600;
 }
 
 .search-wrapper {
   position: relative;
   width: 100%;
-  max-width: 400px;
+  max-width: 360px;
 }
 
 .search-icon {
@@ -303,16 +590,28 @@ const filteredCustomers = computed(() => {
   background-color: #141414;
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: #ffffff;
-  padding: 0.55rem 1rem 0.55rem 2.5rem;
+  padding: 0.55rem 2.2rem 0.55rem 2.5rem;
   font-size: 0.8rem;
   outline: none;
-  border-radius: 2px;
+  border-radius: 4px;
   transition: all 0.25s ease;
 }
 
 .search-input:focus {
   border-color: rgba(184, 152, 116, 0.4);
   background-color: #161616;
+}
+
+.search-clear {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+  cursor: pointer;
 }
 
 /* Grids */
@@ -330,7 +629,20 @@ const filteredCustomers = computed(() => {
   grid-column: span 4;
 }
 
-/* Table spécifiques */
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.results-count-badge {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: monospace;
+}
+
+/* Table */
 .text-center-cell {
   text-align: center;
   padding: 3rem 0 !important;
@@ -340,14 +652,12 @@ const filteredCustomers = computed(() => {
 
 .clickable-row {
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
 .row-selected {
-  background-color: rgba(184, 152, 116, 0.05);
-}
-
-.row-selected:hover {
   background-color: rgba(184, 152, 116, 0.07) !important;
+  border-left: 2px solid #b89874;
 }
 
 .client-cell {
@@ -357,31 +667,51 @@ const filteredCustomers = computed(() => {
 }
 
 .client-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background-color: #242424;
   color: #b89874;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  border: 1px solid rgba(184, 152, 116, 0.3);
+  flex-shrink: 0;
 }
 
 .client-details {
   display: flex;
   flex-direction: column;
+  gap: 0.15rem;
+}
+
+.client-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .client-name {
   color: #ffffff;
   font-weight: 500;
+  font-size: 0.88rem;
 }
 
 .client-email {
-  font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.client-phone {
+  font-size: 0.65rem;
+  color: rgba(184, 152, 116, 0.75);
+}
+
+.text-muted {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* Lifetime Badges */
@@ -392,24 +722,58 @@ const filteredCustomers = computed(() => {
   padding: 0.2rem 0.5rem;
   border-radius: 2px;
   display: inline-block;
+  text-transform: uppercase;
 }
 
 .status-vip-black {
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: rgba(255, 255, 255, 0.06);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .status-vip-plat {
-  background-color: rgba(161, 161, 170, 0.1);
+  background-color: rgba(161, 161, 170, 0.12);
   color: #d4d4d8;
-  border: 1px solid rgba(161, 161, 170, 0.2);
+  border: 1px solid rgba(161, 161, 170, 0.25);
 }
 
 .status-vip-gold {
-  background-color: rgba(184, 152, 116, 0.1);
+  background-color: rgba(184, 152, 116, 0.12);
   color: #b89874;
-  border: 1px solid rgba(184, 152, 116, 0.25);
+  border: 1px solid rgba(184, 152, 116, 0.3);
+}
+
+.status-new-client {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.badge-role {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.badge-role--admin {
+  background: rgba(184, 152, 116, 0.2);
+  color: #b89874;
+  border: 1px solid rgba(184, 152, 116, 0.4);
+}
+
+.badge-role--client {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.badge-role--guest {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Detail Card Profile */
@@ -440,34 +804,44 @@ const filteredCustomers = computed(() => {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding-top: 1rem;
+  padding-top: 0.5rem;
 }
 
 .profile-avatar-large {
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #b89874, #a1805c);
+  background: linear-gradient(135deg, #b89874, #8b6e4e);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  margin-bottom: 1rem;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  margin-bottom: 0.85rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .profile-name-title {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   color: #ffffff;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .profile-email-sub {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.4);
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.profile-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1rem;
 }
 
 .profile-badge-vip {
@@ -477,14 +851,40 @@ const filteredCustomers = computed(() => {
   color: #ffffff;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.profile-contact-box {
+  width: 100%;
+  background-color: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+}
+
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.contact-row svg {
+  color: #b89874;
+  flex-shrink: 0;
 }
 
 .profile-divider {
   width: 100%;
   height: 1px;
   background-color: rgba(255, 255, 255, 0.06);
-  margin: 1.5rem 0;
+  margin: 1.25rem 0;
 }
 
 .metrics-grid {
@@ -572,45 +972,12 @@ const filteredCustomers = computed(() => {
   color: rgba(255, 255, 255, 0.35);
 }
 
-.client-name-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.badge-role {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 0.15rem 0.4rem;
-  border-radius: 3px;
-  text-transform: uppercase;
-}
-
-.badge-role--admin {
-  background: rgba(184, 152, 116, 0.2);
-  color: #b89874;
-  border: 1px solid rgba(184, 152, 116, 0.4);
-}
-
-.badge-role--client {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.profile-badges-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-}
-
 .customer-actions-group {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   width: 100%;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .action-buttons-inline {
@@ -690,24 +1057,34 @@ const filteredCustomers = computed(() => {
 }
 
 @media (max-width: 1024px) {
+  .stats-overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .span-8, .span-4 {
     grid-column: span 12;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
+  .stats-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-tabs {
+    overflow-x: auto;
+  }
+  .search-wrapper {
+    max-width: 100%;
+  }
   .customers-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.75rem;
   }
   .metrics-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  .profile-card-content {
-    padding-top: 0.5rem;
   }
 }
 </style>
-

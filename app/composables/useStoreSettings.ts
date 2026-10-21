@@ -8,7 +8,7 @@ export const useStoreSettings = () => {
     telephone: '+234 (0) 800 TZORAH',
     whatsappNumber: '',
     businessHours: 'Mon – Sat, 9am – 8pm',
-    contactAddress: 'Victoria Island / Lekki, Lagos, Nigeria',
+    contactAddress: 'Port Harcourt, Rivers State, Nigeria',
     responseTime: 'Response within 2 hours',
     freeShippingThreshold: 50000,
     standardShippingFee: 3500,
@@ -26,7 +26,18 @@ export const useStoreSettings = () => {
         accountName: 'TZORAH EMPORIUM ENTERPRISES',
         instructions: 'Please use your Order ID as the transfer description/reference.'
       }
-    ]
+    ],
+    videoAdvertEnabled: true,
+    videoAdvertBadge: 'LIMITED CAMPAIGN • CINEMATIC ADVERT',
+    videoAdvertTitle: 'THE ALCHEMY OF PURE ESSENCE',
+    videoAdvertSubtitle: 'Experience Grade-A USA perfume oils and Middle Eastern attars with zero alcohol dilution. Verified batch purity, opulent sillage, and all-day longevity.',
+    videoAdvertUrl: '',
+    videoAdvertPoster: '/hero_fragrances.jpg',
+    videoAdvertButtonText: 'DISCOVER THE OILS BAR',
+    videoAdvertButtonLink: '/shop?cat=OILS',
+    videoAdvertOfferText: 'Complimentary Discovery Sample with Every Bottle',
+    videoAdvertLoop: true,
+    videoAdvertAutoplay: true
   }))
 
   const fetchStoreSettings = async () => {

@@ -133,6 +133,18 @@ export const useAuth = () => {
     }
   }
 
+  // Intercept nav clicks to wishlist tab in profile
+  const handleWishlistClick = (e?: Event) => {
+    if (e) e.preventDefault()
+    
+    if (isLoggedIn.value) {
+      navigateTo('/profile?tab=wishlist')
+    } else {
+      authModalMode.value = 'login'
+      authModalOpen.value = true
+    }
+  }
+
   return {
     currentUser,
     authModalOpen,
@@ -143,6 +155,7 @@ export const useAuth = () => {
     logout,
     fetchUserProfile,
     handleProfileClick,
+    handleWishlistClick,
     showToast
   }
 }

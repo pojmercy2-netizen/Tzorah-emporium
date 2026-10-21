@@ -7,7 +7,7 @@
         <div class="home-about__overlay"></div>
         <div class="home-about__badge">
           <span class="home-about__badge-sub">CURATED LUXURY</span>
-          <span class="home-about__badge-main">EST. PORT HARCOURT</span>
+          <span class="home-about__badge-main">EST. 2018</span>
         </div>
         <div class="home-about__logo-watermark">
           <img src="/logo.png" alt="TZORAH EMPORIUM Emblem" />
@@ -16,14 +16,14 @@
 
       <!-- Right Content Side -->
       <div class="home-about__content">
-        <span class="home-about__eyebrow">ABOUT TZORAH EMPORIUM</span>
+        <span class="home-about__eyebrow">ABOUT TZORAH EMPORIUM &bull; EST. 2018</span>
         <h2 class="home-about__title">The Alchemy of Scents, Oils &amp; Personal Luxuries</h2>
         <div class="home-about__divider"></div>
         <p class="home-about__lead">
-          TZORAH EMPORIUM was founded on the belief that scent, self-care, and personal intimacy are profound art forms.
+          TZORAH EMPORIUM was established in 2018 on the belief that scent, self-care, and personal intimacy are profound art forms.
         </p>
         <p class="home-about__desc">
-          We bring together pure grade-A USA perfume oils, royal Arabian attars, authentic designer fragrances, pure steam-distilled botanicals, candlecraft supplies, pet body care, and discreet private adult wellness — all unified by an uncompromising devotion to purity, authenticity, and discretion.
+          We bring together pure grade-A USA perfume oils, Middle eastern perfumes, authentic designer fragrances, pure steam-distilled botanicals, candlecraft supplies, pet body care, and discreet private adult wellness — all unified by an uncompromising devotion to purity, authenticity, and discretion.
         </p>
 
         <!-- 4 Core Principles -->

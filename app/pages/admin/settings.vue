@@ -50,7 +50,7 @@
 
           <div class="form-group">
             <label class="form-label">STORE / CONTACT ADDRESS</label>
-            <input v-model="settings.contactAddress" type="text" class="form-input" placeholder="e.g. 12 Fashion Ave, Lagos, Nigeria" />
+            <input v-model="settings.contactAddress" type="text" class="form-input" placeholder="e.g. Port Harcourt, Rivers State, Nigeria" />
           </div>
 
           <div class="form-group">
@@ -224,6 +224,137 @@
         </div>
       </div>
 
+      <!-- Homepage Video Display Section -->
+      <div class="admin-card span-12" id="video-advert">
+        <div class="card-header-flex">
+          <div>
+            <h2 class="admin-card-title">HOMEPAGE PRODUCT VIDEO DISPLAY</h2>
+            <p class="admin-card-subtitle">
+              Upload a commercial/product showcase video to display on the homepage before the Essentials collection.
+            </p>
+          </div>
+          <div class="toggle-wrapper">
+            <input v-model="settings.videoAdvertEnabled" type="checkbox" id="video-advert-toggle" class="toggle-checkbox" />
+            <label for="video-advert-toggle" class="toggle-label"></label>
+            <span class="toggle-text">{{ settings.videoAdvertEnabled ? 'Active on Home Page' : 'Hidden from Storefront' }}</span>
+          </div>
+        </div>
+
+        <div class="video-advert-editor-grid">
+          <!-- Left Column: Upload Controls -->
+          <div class="card-form">
+            <!-- Video File Upload & URL -->
+            <div class="form-group">
+              <label class="form-label">UPLOAD VIDEO FILE (MP4, WEBM, MOV)</label>
+              <div class="media-upload-box" @click="triggerVideoPicker" :class="{ 'is-uploading': uploadingVideo }">
+                <input
+                  ref="videoFileInput"
+                  type="file"
+                  accept="video/mp4,video/webm,video/ogg,video/quicktime,.mp4,.webm,.mov"
+                  class="hidden-file-input"
+                  @change="handleVideoUpload"
+                />
+                <div v-if="uploadingVideo" class="upload-state">
+                  <span class="spinner"></span>
+                  <span>Uploading video to server...</span>
+                </div>
+                <div v-else-if="settings.videoAdvertUrl" class="upload-has-file">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                  <div class="upload-file-meta">
+                    <span class="upload-file-name font-mono">{{ settings.videoAdvertUrl }}</span>
+                    <span class="upload-change-tip">Click here to upload a different video file</span>
+                  </div>
+                </div>
+                <div v-else class="upload-empty">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  <span>Click to choose & upload product video file (.mp4, .webm, .mov)</span>
+                  <span class="upload-sub">Recommended: 16:9 or 21:9 ratio commercial video</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">OR DIRECT VIDEO / EMBED URL</label>
+              <input
+                v-model="settings.videoAdvertUrl"
+                type="text"
+                class="form-input font-mono"
+                placeholder="e.g. /uploads/media/video.mp4 or YouTube / Vimeo URL"
+              />
+              <p class="form-hint">Direct URL to an MP4 video or YouTube / Vimeo link.</p>
+            </div>
+
+            <!-- Optional Poster Image Upload & URL -->
+            <div class="form-group">
+              <label class="form-label">POSTER / THUMBNAIL IMAGE (OPTIONAL)</label>
+              <div class="poster-input-row">
+                <input
+                  v-model="settings.videoAdvertPoster"
+                  type="text"
+                  class="form-input"
+                  placeholder="e.g. /hero_fragrances.jpg"
+                />
+                <input
+                  ref="posterFileInput"
+                  type="file"
+                  accept="image/*"
+                  class="hidden-file-input"
+                  @change="handlePosterUpload"
+                />
+                <button type="button" class="btn-upload-poster" @click="triggerPosterPicker" :disabled="uploadingPoster">
+                  <span v-if="uploadingPoster" class="spinner"></span>
+                  <span v-else>UPLOAD IMAGE</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">PLAYBACK OPTIONS</label>
+              <div class="toggle-wrapper">
+                <input v-model="settings.videoAdvertLoop" type="checkbox" id="video-loop-toggle" class="toggle-checkbox" />
+                <label for="video-loop-toggle" class="toggle-label"></label>
+                <span class="toggle-text">Loop video seamlessly continuously</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Live Video Player Preview -->
+          <div class="advert-preview-column">
+            <span class="preview-title-bar">
+              <span>✦ LIVE VIDEO PREVIEW</span>
+              <NuxtLink to="/#product-video-display" target="_blank" class="preview-ext-link">
+                View on Home Page ↗
+              </NuxtLink>
+            </span>
+
+            <div class="preview-mini-banner">
+              <div class="preview-video-container">
+                <video
+                  v-if="settings.videoAdvertUrl && !isYouTubeOrVimeo(settings.videoAdvertUrl)"
+                  :src="settings.videoAdvertUrl"
+                  :poster="settings.videoAdvertPoster || ''"
+                  class="preview-video"
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  controls
+                ></video>
+                <div v-else-if="isYouTubeOrVimeo(settings.videoAdvertUrl)" class="preview-embedded-state">
+                  <span>Embedded Link Configured (YouTube / Vimeo)</span>
+                </div>
+                <div v-else class="preview-empty-state">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <span>No video uploaded yet</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Access Gate Settings -->
       <div class="admin-card span-6">
         <h2 class="admin-card-title">ADMIN GATE ACCESS CREDENTIAL</h2>
@@ -283,7 +414,7 @@ const settings = ref({
   telephone: '+234 (0) 800 TZORAH',
   whatsappNumber: '+2348000000000',
   businessHours: 'Mon – Fri, 9am – 6pm',
-  contactAddress: 'Victoria Island, Lagos, Nigeria',
+  contactAddress: 'Port Harcourt, Rivers State, Nigeria',
   responseTime: 'Response within 24 hours',
   freeShippingThreshold: 50000,
   standardShippingFee: 3500,
@@ -301,12 +432,99 @@ const settings = ref({
       accountName: 'TZORAH EMPORIUM ENTERPRISES',
       instructions: 'Please use your Order ID as the transfer description/reference.'
     }
-  ]
+  ],
+  videoAdvertEnabled: true,
+  videoAdvertBadge: 'LIMITED CAMPAIGN • CINEMATIC ADVERT',
+  videoAdvertTitle: 'THE ALCHEMY OF PURE ESSENCE',
+  videoAdvertSubtitle: 'Experience Grade-A USA perfume oils and Middle Eastern attars with zero alcohol dilution. Verified batch purity, opulent sillage, and all-day longevity.',
+  videoAdvertUrl: '',
+  videoAdvertPoster: '/hero_fragrances.jpg',
+  videoAdvertButtonText: 'DISCOVER THE OILS BAR',
+  videoAdvertButtonLink: '/shop?cat=OILS',
+  videoAdvertOfferText: 'Complimentary Discovery Sample with Every Bottle',
+  videoAdvertLoop: true,
+  videoAdvertAutoplay: true
 })
 
 const passcodeForm = ref('tzorah2026')
 const showPasscode = ref(false)
 const saving = ref(false)
+
+// Video & Media Upload Refs
+const uploadingVideo = ref(false)
+const uploadingPoster = ref(false)
+const videoFileInput = ref(null)
+const posterFileInput = ref(null)
+
+const triggerVideoPicker = () => {
+  if (videoFileInput.value) videoFileInput.value.click()
+}
+
+const triggerPosterPicker = () => {
+  if (posterFileInput.value) posterFileInput.value.click()
+}
+
+const isYouTubeOrVimeo = (url) => {
+  if (!url) return false
+  const lower = url.toLowerCase()
+  return lower.includes('youtube.com') || lower.includes('youtu.be') || lower.includes('vimeo.com')
+}
+
+const handleVideoUpload = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  uploadingVideo.value = true
+  try {
+    const formData = new FormData()
+    formData.append('video', file)
+
+    const res = await $fetch('/api/v1/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken.value}` },
+      body: formData
+    })
+
+    if (res?.url) {
+      settings.value.videoAdvertUrl = res.url
+      showToast('Video uploaded successfully! Click Commit All Changes to publish.')
+    }
+  } catch (err) {
+    console.error('Video upload failed:', err)
+    alert(err?.data?.message || err?.message || 'Failed to upload video file')
+  } finally {
+    uploadingVideo.value = false
+    if (event.target) event.target.value = ''
+  }
+}
+
+const handlePosterUpload = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  uploadingPoster.value = true
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    const res = await $fetch('/api/v1/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken.value}` },
+      body: formData
+    })
+
+    if (res?.url) {
+      settings.value.videoAdvertPoster = res.url
+      showToast('Poster thumbnail image uploaded successfully!')
+    }
+  } catch (err) {
+    console.error('Poster upload failed:', err)
+    alert(err?.data?.message || err?.message || 'Failed to upload poster image')
+  } finally {
+    uploadingPoster.value = false
+    if (event.target) event.target.value = ''
+  }
+}
 
 const addBankAccount = () => {
   if (!Array.isArray(settings.value.bankAccounts)) {
@@ -741,6 +959,198 @@ const saveSettings = async () => {
 .btn-remove-bank:hover {
   background: #e25c5c;
   color: #fff;
+}
+
+/* Video Advert Editor Styles */
+.video-advert-editor-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .video-advert-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.media-upload-box {
+  background: #141414;
+  border: 1px dashed rgba(212, 175, 55, 0.4);
+  border-radius: 4px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.media-upload-box:hover {
+  border-color: #d4af37;
+  background: rgba(212, 175, 55, 0.04);
+}
+
+.media-upload-box.is-uploading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.upload-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.82rem;
+}
+
+.upload-sub {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.upload-has-file {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+}
+
+.upload-file-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow: hidden;
+}
+
+.upload-file-name {
+  font-size: 0.78rem;
+  color: #d4af37;
+  word-break: break-all;
+}
+
+.upload-change-tip {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.upload-state {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #d4af37;
+  font-size: 0.82rem;
+}
+
+.poster-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.poster-input-row .form-input {
+  flex: 1;
+}
+
+.btn-upload-poster {
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: #e2c275;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0 1rem;
+  border-radius: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-upload-poster:hover {
+  background: #d4af37;
+  color: #000;
+}
+
+/* Advert Preview Column */
+.advert-preview-column {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 1.25rem;
+}
+
+.preview-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #d4af37;
+}
+
+.preview-ext-link {
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: underline;
+  font-size: 0.65rem;
+  font-weight: 400;
+}
+
+.preview-ext-link:hover {
+  color: #ffffff;
+}
+
+.preview-mini-banner {
+  background: #080808;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.preview-video-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.preview-empty-state, .preview-embedded-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.preview-empty-state svg {
+  color: #d4af37;
+  opacity: 0.8;
 }
 </style>
 

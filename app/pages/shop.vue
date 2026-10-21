@@ -25,6 +25,34 @@
       
       <!-- Filters and Toolbar -->
       <div class="shop-toolbar">
+        <!-- Search Input -->
+        <div class="shop-filter-group shop-filter-group--search">
+          <label for="shop-search-input" class="shop-filter-label">SEARCH PRODUCTS</label>
+          <div class="shop-search-wrapper">
+            <svg class="shop-search-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              id="shop-search-input"
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search by product name, oil, fragrance..."
+              class="shop-search-input"
+              @input="onSearchInput"
+            />
+            <button
+              v-if="searchQuery"
+              class="shop-search-clear-btn"
+              @click="clearSearch"
+              aria-label="Clear search"
+              type="button"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+
         <!-- Main Categories Dropdown -->
         <div class="shop-filter-group">
           <label for="category-select" class="shop-filter-label">CATEGORY</label>
@@ -65,7 +93,7 @@
         </div>
 
         <!-- Sorting Dropdown -->
-        <div class="shop-filter-group">
+        <div class="shop-filter-group shop-filter-group--sort">
           <label for="sort-select" class="shop-filter-label">SORT BY</label>
           <div class="shop-select-wrapper">
             <select id="sort-select" v-model="sortBy" class="shop-custom-select">
@@ -90,13 +118,17 @@
       </div>
 
       <!-- Active Filters Summary -->
-      <div class="shop-active-filters" v-if="activeCategory !== 'ALL' || activeSubcategory !== 'ALL'">
-        <span class="shop-active-tag">
+      <div class="shop-active-filters" v-if="activeCategory !== 'ALL' || activeSubcategory !== 'ALL' || searchQuery">
+        <span class="shop-active-tag" v-if="searchQuery">
+          SEARCH: "{{ searchQuery }}"
+          <button class="shop-active-tag__close" @click="clearSearch">&times;</button>
+        </span>
+        <span class="shop-active-tag" v-if="activeCategory !== 'ALL'">
           {{ activeCategory }}
           <span v-if="activeSubcategory !== 'ALL'"> &bull; {{ activeSubcategory }}</span>
-          <button class="shop-active-tag__close" @click="resetFilters">&times;</button>
+          <button class="shop-active-tag__close" @click="resetCategoryFilters">&times;</button>
         </span>
-        <button class="shop-clear-all" @click="resetFilters">Reset Filters</button>
+        <button class="shop-clear-all" @click="resetFilters">Reset All</button>
       </div>
 
       <!-- Products Grid -->
@@ -118,8 +150,8 @@
             <!-- Heart Wishlist Toggle -->
             <button
               class="product-card__wishlist"
-              :class="{ 'product-card__wishlist--active': wishlisted.includes(product.id) }"
-              @click="toggleWishlist(product.id)"
+              :class="{ 'product-card__wishlist--active': isWishlisted(product.id) }"
+              @click="toggleWishlist(product)"
               aria-label="Add to Wishlist"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -150,8 +182,19 @@
 
       <!-- Empty State -->
       <div v-if="filteredProducts.length === 0" class="shop-empty">
-        <p>No products found under this selection.</p>
-        <button class="btn btn-secondary" @click="resetFilters">VIEW ALL PRODUCTS</button>
+        <p v-if="searchQuery">No products found matching "<strong>{{ searchQuery }}</strong>"<span v-if="activeCategory !== 'ALL'"> in {{ activeCategory }}</span>.</p>
+        <p v-else>No products found under this selection.</p>
+        <div class="shop-empty__buttons">
+          <button v-if="searchQuery && activeCategory !== 'ALL'" class="btn btn-secondary empty-action-btn" @click="activeCategory = 'ALL'; activeSubcategory = 'ALL'">
+            SEARCH ACROSS ALL CATEGORIES
+          </button>
+          <button v-if="searchQuery" class="btn btn-secondary empty-action-btn" @click="clearSearch">
+            CLEAR SEARCH
+          </button>
+          <button class="btn btn-primary empty-action-btn" @click="resetFilters">
+            VIEW ALL PRODUCTS
+          </button>
+        </div>
       </div>
 
     </main>
@@ -164,7 +207,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 useHead({
   title: 'Shop All | TZORAH EMPORIUM',
@@ -172,6 +215,7 @@ useHead({
 })
 
 const route = useRoute()
+const router = useRouter()
 const cartCount = useState('cartCount', () => 0)
 const cartItems = useState('cartItems', () => [])
 const toasts = useState('toasts', () => [])
@@ -187,6 +231,7 @@ const categories = [
   'ADULT SECTION'
 ]
 
+const searchQuery = ref('')
 const activeCategory = ref('ALL')
 const activeSubcategory = ref('ALL')
 const sortBy = ref('featured')
@@ -256,22 +301,42 @@ const setCategory = (cat) => {
   activeSubcategory.value = 'ALL'
 }
 
+const onSearchInput = () => {
+  const qVal = searchQuery.value.trim() ? searchQuery.value.trim() : undefined
+  router.replace({
+    query: {
+      ...route.query,
+      q: qVal
+    }
+  })
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  onSearchInput()
+}
+
+const resetCategoryFilters = () => {
+  activeCategory.value = 'ALL'
+  activeSubcategory.value = 'ALL'
+  router.replace({
+    query: {
+      ...route.query,
+      cat: undefined,
+      sub: undefined
+    }
+  })
+}
+
 const resetFilters = () => {
   activeCategory.value = 'ALL'
   activeSubcategory.value = 'ALL'
+  searchQuery.value = ''
+  router.replace({ query: {} })
 }
 
-// Track wishlist items
-const wishlisted = ref([])
-const toggleWishlist = (id) => {
-  if (wishlisted.value.includes(id)) {
-    wishlisted.value = wishlisted.value.filter(item => item !== id)
-    showToast('Removed from wishlist.')
-  } else {
-    wishlisted.value.push(id)
-    showToast('Added to wishlist.')
-  }
-}
+// Wishlist composable
+const { isWishlisted, toggleWishlist, loadWishlist } = useWishlist()
 
 const showToast = (message) => {
   toasts.value.push({
@@ -289,311 +354,6 @@ const currencySymbol = computed(() => {
   return '₦'
 })
 
-// Complete Default Products Catalogue for Or. Store
-const defaultCatalogue = [
-  // USA Oil Perfumes
-  {
-    id: 'perf_usa_1',
-    name: 'Baccarat Rouge 540 Pure Oil (USA)',
-    category: 'PERFUMES',
-    subcategory: 'USA Oil Perfumes',
-    price: 38500,
-    image: '/images/products/perf_usa_1.png',
-    description: 'Ultra-concentrated 100% pure undiluted perfume oil imported from USA fragrance labs.',
-    size: '50ml'
-  },
-  {
-    id: 'perf_usa_2',
-    name: 'Aventus Imperial Undiluted Oil (USA)',
-    category: 'PERFUMES',
-    subcategory: 'USA Oil Perfumes',
-    price: 32000,
-    image: '/images/products/perf_usa_2.png',
-    description: 'Grade-A USA oil perfume. Bergamot, blackcurrant, birch smoke and oakmoss.',
-    size: '30ml'
-  },
-  {
-    id: 'perf_usa_3',
-    name: 'Santal Noir 33 Concentrated Oil (USA)',
-    category: 'PERFUMES',
-    subcategory: 'USA Oil Perfumes',
-    price: 35000,
-    image: '/images/products/perf_usa_3.png',
-    description: 'Smoky sandalwood and cardamom aroma formulated in pure oil medium. 24+ hour longevity.',
-    size: '50ml'
-  },
-
-  // Middle Eastern Perfumes
-  {
-    id: 'perf_me_1',
-    name: 'Lattafa Khamrah Royale EDP',
-    category: 'PERFUMES',
-    subcategory: 'Middle Eastern Perfumes',
-    price: 48000,
-    image: '/images/products/perf_me_1.png',
-    description: 'Oriental gourmand masterpiece with rich cognac accord, cinnamon, dates and smoky vanilla.',
-    size: '100ml'
-  },
-  {
-    id: 'perf_me_2',
-    name: 'Swiss Arabian Shaghaf Oud Gold Extrait',
-    category: 'PERFUMES',
-    subcategory: 'Middle Eastern Perfumes',
-    price: 55000,
-    image: '/images/products/perf_me_2.png',
-    description: 'Lavish blend of decadent agarwood (oud), rich golden praline, rose and warm vanilla.',
-    size: '75ml'
-  },
-  {
-    id: 'perf_me_3',
-    name: 'Al Haramain Amber Oud Gold Edition',
-    category: 'PERFUMES',
-    subcategory: 'Middle Eastern Perfumes',
-    price: 62000,
-    image: '/images/products/perf_me_3.png',
-    description: 'Bergamot and melon top notes intertwine with luscious amber, pineapple and musk.',
-    size: '120ml'
-  },
-
-  // Authentic Designer Perfumes
-  {
-    id: 'perf_des_1',
-    name: 'Bleu de Chanel Eau de Parfum (Original)',
-    category: 'PERFUMES',
-    subcategory: 'Authentic Designer Perfumes',
-    price: 185000,
-    image: '/images/products/perf_des_1.png',
-    description: '100% authentic sealed original. Aromatic-woody fragrance with cedar and sandalwood.',
-    size: '100ml'
-  },
-  {
-    id: 'perf_des_2',
-    name: 'Tom Ford Tobacco Vanille (Authentic)',
-    category: 'PERFUMES',
-    subcategory: 'Authentic Designer Perfumes',
-    price: 245000,
-    image: '/images/products/perf_des_2.png',
-    description: 'Opulent private blend. Luxurious tobacco leaf, aromatic spices, cocoa and wood sap.',
-    size: '50ml'
-  },
-  {
-    id: 'perf_des_3',
-    name: 'Dior Sauvage Elixir (Original)',
-    category: 'PERFUMES',
-    subcategory: 'Authentic Designer Perfumes',
-    price: 195000,
-    image: '/images/products/perf_des_3.png',
-    description: 'Intoxicating spicy heart and rich woods liqueur trail.',
-    size: '60ml'
-  },
-
-  // Niche Products
-  {
-    id: 'perf_niche_1',
-    name: 'Maison Francis Kurkdjian Grand Soir',
-    category: 'PERFUMES',
-    subcategory: 'Niche Products',
-    price: 280000,
-    image: '/images/products/perf_niche_1.png',
-    description: 'Radiant Parisian evening encapsulated with deep labdanum, tonka bean and amber vanilla.',
-    size: '70ml'
-  },
-  {
-    id: 'perf_niche_2',
-    name: 'Amouage Interlude Man (The Blue Beast)',
-    category: 'PERFUMES',
-    subcategory: 'Niche Products',
-    price: 295000,
-    image: '/images/products/perf_niche_2.png',
-    description: 'Royal niche harmony of frankincense, myrrh, pimento berry oil and dark patchouli.',
-    size: '100ml'
-  },
-
-  // The Oils Bar — Fragrance Oils
-  {
-    id: 'oil_frag_1',
-    name: 'Golden Amber & Musk Fragrance Oil',
-    category: 'OILS',
-    subcategory: 'Fragrance Oils',
-    price: 18500,
-    image: '/images/products/oil_frag_1.png',
-    description: 'Cosmetic & candle grade premium fragrance oil. For body oils, candles, and diffusers.',
-    size: '100ml'
-  },
-  {
-    id: 'oil_frag_2',
-    name: 'French Vanilla Blossom Fragrance Oil',
-    category: 'OILS',
-    subcategory: 'Fragrance Oils',
-    price: 16000,
-    image: '/images/products/oil_frag_2.png',
-    description: 'Warm vanilla bean with floral undertones for personal body application and candle crafts.',
-    size: '100ml'
-  },
-
-  // The Oils Bar — Essential Oils
-  {
-    id: 'oil_ess_1',
-    name: '100% Pure French Lavender Essential Oil',
-    category: 'OILS',
-    subcategory: 'Essential Oils',
-    price: 12500,
-    image: '/images/products/oil_ess_1.png',
-    description: 'Steam-distilled pure botanical essence from Provence. Calming aromatherapy.',
-    size: '30ml'
-  },
-  {
-    id: 'oil_ess_2',
-    name: 'Australian Organic Tea Tree Essential Oil',
-    category: 'OILS',
-    subcategory: 'Essential Oils',
-    price: 11000,
-    image: '/images/products/oil_ess_2.png',
-    description: 'Therapeutic grade Melaleuca alternifolia. Natural clarifying and purifying qualities.',
-    size: '30ml'
-  },
-
-  // The Oils Bar — Natural Oils
-  {
-    id: 'oil_nat_1',
-    name: 'Cold-Pressed Golden Jojoba Natural Oil',
-    category: 'OILS',
-    subcategory: 'Natural Oils',
-    price: 15000,
-    image: '/images/products/oil_nat_1.png',
-    description: 'Unrefined virgin cold-pressed golden carrier oil. Deeply hydrates without clogging pores.',
-    size: '200ml'
-  },
-  {
-    id: 'oil_nat_2',
-    name: 'Organic Moroccan Argan Natural Oil',
-    category: 'OILS',
-    subcategory: 'Natural Oils',
-    price: 19500,
-    image: '/images/products/oil_nat_2.png',
-    description: 'Pure liquid gold for face, beard and hair. 100% cold-pressed cosmetic purity.',
-    size: '100ml'
-  },
-
-  // Unscented Products
-  {
-    id: 'unscented_1',
-    name: 'Raw Whipped Unscented Shea & Mango Butter',
-    category: 'UNSCENTED PRODUCTS',
-    subcategory: 'Unscented Body Care',
-    price: 14500,
-    image: '/images/products/unscented_1.png',
-    description: 'Silky whipped body butter crafted without essential oils or perfumes. 100% hypoallergenic.',
-    size: '250g'
-  },
-  {
-    id: 'unscented_2',
-    name: 'Hypoallergenic Unscented Lotion Base',
-    category: 'UNSCENTED PRODUCTS',
-    subcategory: 'Unscented Skincare',
-    price: 18000,
-    image: '/images/products/unscented_2.png',
-    description: 'Fragrance-free velvety moisturizer with ceramides. Perfect for sensitive skin.',
-    size: '500ml'
-  },
-
-  // Candle Making Accessories
-  {
-    id: 'candle_1',
-    name: 'Golden Soy Wax Flakes (1kg Craft Bag)',
-    category: 'CANDLE MAKING ACCESSORIES',
-    subcategory: 'Waxes & Bases',
-    price: 16500,
-    image: '/images/products/candle_1.png',
-    description: '100% natural biodegradable soy wax for container candles. Superior fragrance retention.',
-    size: '1kg'
-  },
-  {
-    id: 'candle_2',
-    name: 'Pre-Waxed Cotton Wicks & Sustainer Kit',
-    category: 'CANDLE MAKING ACCESSORIES',
-    subcategory: 'Wicks & Hardware',
-    price: 7500,
-    image: '/images/products/candle_2.png',
-    description: '100 lead-free natural cotton wicks with metal base sustainers and wick centering tools.',
-    size: '100 Pieces'
-  },
-  {
-    id: 'candle_3',
-    name: 'Stainless Steel Wax Melting Pitcher (900ml)',
-    category: 'CANDLE MAKING ACCESSORIES',
-    subcategory: 'Tools & Vessels',
-    price: 12500,
-    image: '/images/products/candle_3.png',
-    description: 'Drip-less precision pouring pot with heat-resistant ergonomic handle.',
-    size: '900ml'
-  },
-
-  // Pet Body Care Products
-  {
-    id: 'pet_1',
-    name: 'Calming Oatmeal & Chamomile Pet Coat Wash',
-    category: 'PET BODY CARE PRODUCTS',
-    subcategory: 'Grooming & Washes',
-    price: 13500,
-    image: '/images/products/pet_1.png',
-    description: 'pH balanced soothing shampoo for dogs and cats. Gently cleanses without irritation.',
-    size: '350ml'
-  },
-  {
-    id: 'pet_2',
-    name: 'Organic Herbal Paw & Nose Protection Balm',
-    category: 'PET BODY CARE PRODUCTS',
-    subcategory: 'Balms & Salves',
-    price: 8500,
-    image: '/images/products/pet_2.png',
-    description: 'All-natural lick-safe formula to soothe dry cracked paws and snouts.',
-    size: '60g'
-  },
-
-  // Adult Section (18+)
-  {
-    id: 'adult_toy_1',
-    name: 'Whisper Luxe Ergonomic Silicone Pulse Wand',
-    category: 'ADULT SECTION',
-    subcategory: 'Adult Toys',
-    price: 38000,
-    image: '/images/products/adult_toy_1.png',
-    description: 'Medical-grade velvety soft silicone wellness massager. 10 whisper-quiet vibration modes.',
-    size: 'Standard'
-  },
-  {
-    id: 'adult_toy_2',
-    name: 'Rose Petal Dual-Action Precision Stimulator',
-    category: 'ADULT SECTION',
-    subcategory: 'Adult Toys',
-    price: 42000,
-    image: '/images/products/adult_toy_2.png',
-    description: 'Gentle air-pulse and magnetic vibration technology in a discreet rose design.',
-    size: 'Compact'
-  },
-  {
-    id: 'adult_ling_1',
-    name: 'Midnight Mulberry Silk & Lace Chemise',
-    category: 'ADULT SECTION',
-    subcategory: 'Lingeries',
-    price: 32000,
-    image: '/images/products/adult_ling_1.png',
-    description: '100% pure Mulberry silk slip adorned with French scalloped Chantilly lace.',
-    size: 'S / M / L / XL'
-  },
-  {
-    id: 'adult_ling_2',
-    name: 'Ethereal Satin Robe with Chantilly Lace Trim',
-    category: 'ADULT SECTION',
-    subcategory: 'Lingeries',
-    price: 36000,
-    image: '/images/products/adult_ling_2.png',
-    description: 'Fluid satin dressing gown with eyelash lace cuffs and satin sash tie belt.',
-    size: 'Free Size'
-  }
-]
-
 const mapProductData = (list) => {
   if (!Array.isArray(list)) return []
   return list.map(p => {
@@ -605,14 +365,14 @@ const mapProductData = (list) => {
       subcategory: p.subcategory || '',
       price: priceVal,
       priceFormatted: `${currencySymbol.value}${priceVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-      image: p.image || '/images/products/perf_usa_1.png',
+      image: p.image || '/images/products/placeholder.png',
       description: p.description || '',
       size: p.size || ''
     }
   })
 }
 
-const products = ref(mapProductData(defaultCatalogue))
+const products = ref([])
 
 // Fetch live products from Nitro server
 const { data: liveProductsData } = await useAsyncData('shopProductsData', () => $fetch('/api/v1/products'))
@@ -633,36 +393,52 @@ const fetchLiveProducts = async () => {
   }
 }
 
-onMounted(() => {
-  fetchLiveProducts()
+const syncWithRoute = (query) => {
+  if (query.q || query.search) {
+    searchQuery.value = String(query.q || query.search)
+  } else {
+    searchQuery.value = ''
+  }
 
-  // Sync route query parameter if available (e.g. /shop?cat=OILS)
-  if (route.query.cat) {
-    const queryCat = String(route.query.cat).toUpperCase()
+  if (query.cat) {
+    const queryCat = String(query.cat).toUpperCase()
     const match = categories.find(c => c.toUpperCase() === queryCat)
     if (match) {
       activeCategory.value = match
     }
   }
-  if (route.query.sub) {
-    activeSubcategory.value = String(route.query.sub)
+
+  if (query.sub) {
+    activeSubcategory.value = String(query.sub)
   }
+}
+
+onMounted(() => {
+  loadWishlist()
+  fetchLiveProducts()
+  syncWithRoute(route.query)
 })
 
 // Watch route changes
 watch(() => route.query, (newQ) => {
-  if (newQ.cat) {
-    const match = categories.find(c => c.toUpperCase() === String(newQ.cat).toUpperCase())
-    if (match) activeCategory.value = match
-  }
-  if (newQ.sub) {
-    activeSubcategory.value = String(newQ.sub)
-  }
+  syncWithRoute(newQ)
 })
 
 // Filtered and Sorted Products
 const filteredProducts = computed(() => {
   let list = [...products.value]
+
+  // Filter search query across name, description, category, and subcategory
+  const q = searchQuery.value.toLowerCase().trim()
+  if (q) {
+    list = list.filter(p => {
+      const name = (p.name || '').toLowerCase()
+      const desc = (p.description || '').toLowerCase()
+      const cat = (p.category || '').toLowerCase()
+      const sub = (p.subcategory || '').toLowerCase()
+      return name.includes(q) || desc.includes(q) || cat.includes(q) || sub.includes(q)
+    })
+  }
 
   // Filter category
   if (activeCategory.value !== 'ALL') {
@@ -829,6 +605,91 @@ const addToCart = (product) => {
   flex: 1 1 0;
   min-width: 0;
   max-width: 320px;
+}
+
+.shop-filter-group--search {
+  flex: 1.4 1 0;
+  max-width: 380px;
+}
+
+.shop-search-wrapper {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.shop-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--color-accent);
+  pointer-events: none;
+  width: 14px;
+  height: 14px;
+}
+
+.shop-search-input {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.65rem 2rem 0.65rem 2.2rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background-color: #ffffff;
+  color: var(--color-text-dark);
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.shop-search-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(201, 168, 106, 0.25);
+}
+
+.shop-search-input::placeholder {
+  color: #999;
+  font-size: 0.72rem;
+}
+
+.shop-search-clear-btn {
+  position: absolute;
+  right: 0.6rem;
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  color: #666;
+  font-size: 1rem;
+  line-height: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.shop-search-clear-btn:hover {
+  background: rgba(0, 0, 0, 0.15);
+  color: #000;
+}
+
+.shop-empty__buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.empty-action-btn {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
 }
 
 .shop-filter-label {
@@ -1147,18 +1008,21 @@ const addToCart = (product) => {
 
 @media (max-width: 768px) {
   .shop-toolbar {
-    flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: flex-end;
-    gap: 0.5rem;
+    gap: 0.65rem 0.5rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
   }
   .shop-filter-group {
-    flex: 1 1 0;
+    flex: 1 1 calc(33.333% - 0.5rem);
     min-width: 0;
     max-width: 100%;
     gap: 0.3rem;
+  }
+  .shop-filter-group--search {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
   .shop-filter-label {
     font-size: 0.58rem;
@@ -1168,6 +1032,10 @@ const addToCart = (product) => {
     font-size: 0.62rem;
     padding: 0.5rem 1.35rem 0.5rem 0.45rem;
     letter-spacing: 0.02em;
+  }
+  .shop-search-input {
+    font-size: 0.72rem;
+    padding: 0.55rem 1.8rem 0.55rem 2rem;
   }
   .shop-select-arrow {
     right: 0.35rem;

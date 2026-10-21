@@ -57,6 +57,7 @@
       <div class="search-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input v-model="searchQuery" type="text" placeholder="Search by name, category, or subcategory..." class="search-input" />
+        <button v-if="searchQuery" class="search-clear-admin" @click="searchQuery = ''" aria-label="Clear search" type="button">&times;</button>
       </div>
 
       <div class="filter-dropdowns">
@@ -104,10 +105,28 @@
             <tr v-if="filteredProducts.length === 0">
               <td colspan="8" class="text-center-cell">
                 <div class="empty-box">
-                  <p>No products found matching the criteria.</p>
-                  <button class="btn-primary-admin empty-add-btn" @click="openAddModal">
-                    Add Product Now
-                  </button>
+                  <p v-if="searchQuery">
+                    No products found matching "<strong>{{ searchQuery }}</strong>"<span v-if="selectedCategory !== 'ALL'"> in {{ selectedCategory }}</span>.
+                  </p>
+                  <p v-else>No products found matching the criteria.</p>
+
+                  <div v-if="otherCategoryMatchesCount > 0" class="empty-suggestion">
+                    <p class="text-amber">
+                      Found {{ otherCategoryMatchesCount }} product(s) matching "{{ searchQuery }}" in other categories!
+                    </p>
+                    <button class="btn-secondary-admin" @click="selectCategoryTab('ALL')">
+                      View In All Categories &rarr;
+                    </button>
+                  </div>
+
+                  <div class="empty-actions-row">
+                    <button v-if="hasActiveFilters" class="btn-secondary-admin" @click="resetFilters">
+                      Clear Search &amp; Filters
+                    </button>
+                    <button class="btn-primary-admin empty-add-btn" @click="openAddModal">
+                      Add Product Now
+                    </button>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -574,14 +593,25 @@ const resetFilters = () => {
   searchQuery.value = ''
 }
 
+const otherCategoryMatchesCount = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q || selectedCategory.value === 'ALL') return 0
+  return adminProducts.value.filter(p => {
+    const name = (p.name || '').toLowerCase()
+    const cat = (p.category || '').toLowerCase()
+    const sub = (p.subcategory || '').toLowerCase()
+    return name.includes(q) || cat.includes(q) || sub.includes(q)
+  }).length
+})
+
 // Computed Filtered List
 const filteredProducts = computed(() => {
   return adminProducts.value.filter(p => {
     const q = searchQuery.value.toLowerCase().trim()
-    const matchesSearch = !q ||
-      p.name.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q) ||
-      p.subcategory.toLowerCase().includes(q)
+    const nameMatch = (p.name || '').toLowerCase().includes(q)
+    const catMatch = (p.category || '').toLowerCase().includes(q)
+    const subMatch = (p.subcategory || '').toLowerCase().includes(q)
+    const matchesSearch = !q || nameMatch || catMatch || subMatch
 
     const matchesCategory = selectedCategory.value === 'ALL' || p.category === selectedCategory.value
 
@@ -1028,6 +1058,31 @@ const getCategoryBadgeClass = (cat) => {
   background-color: #161616;
 }
 
+.search-clear-admin {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.search-clear-admin:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
 .filter-dropdowns {
   display: flex;
   align-items: center;
@@ -1329,8 +1384,45 @@ const getCategoryBadgeClass = (cat) => {
   color: rgba(255, 255, 255, 0.4);
 }
 
+.empty-suggestion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  background-color: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 0.85rem 1.5rem;
+  border-radius: 4px;
+}
+
+.empty-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-secondary-admin {
+  background: transparent;
+  color: #b89874;
+  border: 1px solid #b89874;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary-admin:hover {
+  background: rgba(184, 152, 116, 0.15);
+  color: #fff;
+}
+
 .empty-add-btn {
-  margin: 0 auto;
+  margin: 0;
 }
 
 /* Modals & Drawers */

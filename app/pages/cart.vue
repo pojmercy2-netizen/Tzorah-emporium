@@ -31,32 +31,6 @@
       <!-- ════════════════════════════════════════ -->
       <div class="cart-top">
         <h1 class="cart-title">YOUR CART ({{ cartCount }})</h1>
-
-        <div class="shipping-row">
-          <div class="shipping-progress__wrap">
-            <p class="shipping-progress__label" v-if="amountToFreeShipping > 0">
-              You're <strong>{{ currencySymbol }}{{ amountToFreeShipping.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</strong> away from free shipping
-            </p>
-            <p class="shipping-progress__label" v-else>
-              🎉 You've unlocked <strong>free shipping!</strong>
-            </p>
-            <div class="shipping-progress__bar">
-              <div class="shipping-progress__fill" :style="{ width: shippingProgress + '%' }"></div>
-            </div>
-          </div>
-          <div class="shipping-badge">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="1" y="3" width="15" height="13"></rect>
-              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-              <circle cx="5.5" cy="18.5" r="2.5"></circle>
-              <circle cx="18.5" cy="18.5" r="2.5"></circle>
-            </svg>
-            <div>
-              <strong>FREE SHIPPING</strong>
-              <span>on orders over {{ currencySymbol }}{{ freeShippingThreshold.toLocaleString() }}.</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- ════════════════════════════════════════ -->
@@ -85,12 +59,12 @@
               </button>
             </div>
 
-            <!-- Color -->
-            <div class="cart-item__attr">
+            <!-- Color (if product has color options) -->
+            <div class="cart-item__attr" v-if="item.colors && item.colors.length > 0">
               <span class="cart-item__attr-label">Color:</span>
-              <span class="cart-item__attr-val">{{ item.selectedColor ? capitalize(item.selectedColor) : 'Black' }}</span>
+              <span class="cart-item__attr-val">{{ item.selectedColor ? capitalize(item.selectedColor) : capitalize(item.colors[0]) }}</span>
             </div>
-            <div class="cart-item__swatches">
+            <div class="cart-item__swatches" v-if="item.colors && item.colors.length > 0">
               <span
                 v-for="c in item.colors"
                 :key="c"
@@ -99,20 +73,6 @@
                 :style="{ backgroundColor: getColorHex(c) }"
                 @click="item.selectedColor = c"
               ></span>
-            </div>
-
-            <!-- Size -->
-            <div class="cart-item__attr">
-              <span class="cart-item__attr-label">Size:</span>
-              <span class="cart-item__attr-val">{{ item.selectedSize || 'M' }}</span>
-            </div>
-            <div class="cart-item__sizes">
-              <button
-                v-for="sz in sizes"
-                :key="sz"
-                :class="['size-btn', { 'size-btn--active': (item.selectedSize || 'M') === sz }]"
-                @click="item.selectedSize = sz"
-              >{{ sz }}</button>
             </div>
 
             <!-- Quantity + Line Total -->
@@ -157,13 +117,7 @@
         </div>
         <div class="order-summary__row">
           <span>Shipping</span>
-          <span :class="shippingCost === 0 ? 'free-text' : ''">{{ shippingCost === 0 ? 'FREE' : 'Calculated at checkout' }}</span>
-        </div>
-        <div class="order-summary__row">
-          <span class="tax-label">Estimated Tax
-            <button class="tax-info" title="Based on your shipping address">ⓘ</button>
-          </span>
-          <span>{{ currencySymbol }}{{ estimatedTax.toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</span>
+          <span style="color: #c8973a; font-weight: 600; font-size: 0.8rem; font-style: italic;">Determined by dispatch rider</span>
         </div>
         <div class="order-summary__row order-summary__row--total">
           <span>Estimated Total</span>
@@ -323,7 +277,6 @@ onMounted(fetchStoreSettings)
 
 const freeShippingThreshold = computed(() => Number(storeSettings.value.freeShippingThreshold || 150))
 const standardShippingFee = computed(() => Number(storeSettings.value.standardShippingFee || 15))
-const TAX_RATE = 0.09
 
 const currencySymbol = computed(() => {
   const c = storeSettings.value?.currency || 'NGN'
@@ -333,21 +286,11 @@ const currencySymbol = computed(() => {
   return '₦'
 })
 
-const sizes = ['S', 'M', 'L', 'XL', 'XXL']
-
 // ─── Computed Financials ──────────────────────────
 const subtotal = computed(() =>
   cartItems.value.reduce((sum, i) => sum + i.price * i.quantity, 0)
 )
-const shippingCost = computed(() => subtotal.value >= freeShippingThreshold.value ? 0 : standardShippingFee.value)
-const estimatedTax = computed(() => subtotal.value * TAX_RATE)
-const estimatedTotal = computed(() => subtotal.value + shippingCost.value + estimatedTax.value)
-const amountToFreeShipping = computed(() =>
-  Math.max(0, freeShippingThreshold.value - subtotal.value)
-)
-const shippingProgress = computed(() =>
-  Math.min(100, (subtotal.value / freeShippingThreshold.value) * 100)
-)
+const estimatedTotal = computed(() => subtotal.value)
 
 // ─── Helpers ─────────────────────────────────────
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
@@ -389,8 +332,8 @@ const quickAdd = (rec) => {
   cartCount.value++
   const existing = cartItems.value.find(i => i.id === rec.id)
   if (existing) { existing.quantity++; return }
-  const selectedColor = (rec.colors && rec.colors.length > 0) ? rec.colors[0] : 'black'
-  cartItems.value.push({ ...rec, quantity: 1, selectedColor, selectedSize: 'M' })
+  const selectedColor = (rec.colors && rec.colors.length > 0) ? rec.colors[0] : ''
+  cartItems.value.push({ ...rec, quantity: 1, selectedColor })
   showToast(`"${rec.name}" added to bag.`)
 }
 

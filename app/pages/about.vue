@@ -37,26 +37,18 @@
     </section>
 
     <!-- ───────────────────────────────────────── -->
-    <!-- SECTION 3: Crafted to Last – Split layout -->
+    <!-- SECTION 3: Crafted to Last                -->
     <!-- ───────────────────────────────────────── -->
     <section class="about-craft">
-      <!-- Left: text -->
-      <div class="about-craft__text">
-        <span class="about-craft__eyebrow">UNCOMPROMISING PURITY</span>
-        <h2 class="about-craft__title">100% Authentic.<br />Never Compromised.</h2>
-        <div class="about-craft__divider"></div>
-        <p class="about-craft__desc">
-          Every perfume oil, essential drop, and carrier base in our store is batch-verified for purity and long-lasting potency. Zero alcohol dilution in our pure oils, skin-safe cosmetic ingredients, and responsibly sourced botanical extracts.
-        </p>
-        <NuxtLink to="/shop?cat=OILS" class="about-btn about-btn--outline">VISIT THE OILS BAR</NuxtLink>
-      </div>
-
-      <!-- Right: image -->
-      <div class="about-craft__image">
-        <img src="/images/or_oils.png" alt="TZORAH EMPORIUM Pure Botanical Oils" />
-        <!-- Logo watermark overlay -->
-        <div class="img-logo-overlay img-logo-overlay--br">
-          <img src="/logo.png" alt="TZORAH EMPORIUM" />
+      <div class="container">
+        <div class="about-craft__content">
+          <span class="about-craft__eyebrow">UNCOMPROMISING PURITY</span>
+          <h2 class="about-craft__title">100% Authentic.<br />Never Compromised.</h2>
+          <div class="about-craft__divider"></div>
+          <p class="about-craft__desc">
+            Every perfume oil, essential drop, and carrier base in our store is batch-verified for purity and long-lasting potency. Zero alcohol dilution in our pure oils, skin-safe cosmetic ingredients, and responsibly sourced botanical extracts.
+          </p>
+          <NuxtLink to="/shop?cat=OILS" class="about-btn about-btn--outline">VISIT THE OILS BAR</NuxtLink>
         </div>
       </div>
     </section>
@@ -350,17 +342,19 @@ const values = [
 
 /* ─── Section 3: Craft ────────────────────────── */
 .about-craft {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  padding: 5rem 0;
   background-color: var(--color-bg-light);
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.about-craft__text {
-  padding: 4rem 3rem 4rem 4rem;
+.about-craft__content {
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  padding: 0 1.5rem;
 }
 
 .about-craft__eyebrow {
@@ -375,41 +369,28 @@ const values = [
 
 .about-craft__title {
   font-family: var(--font-serif);
-  font-size: 2.2rem;
+  font-size: 2.4rem;
   font-weight: 400;
   line-height: 1.25;
   color: var(--color-text-dark);
   margin-bottom: 1.25rem;
+  letter-spacing: 0.02em;
 }
 
 .about-craft__divider {
-  width: 36px;
+  width: 40px;
   height: 2px;
   background-color: var(--color-accent);
-  margin-bottom: 1.5rem;
+  margin: 0 auto 1.5rem auto;
 }
 
 .about-craft__desc {
   font-family: var(--font-sans);
-  font-size: 0.9rem;
-  line-height: 1.7;
+  font-size: 0.95rem;
+  line-height: 1.75;
   color: var(--color-text-muted);
   margin-bottom: 2rem;
-  max-width: 360px;
-}
-
-.about-craft__image {
-  position: relative;
-  overflow: hidden;
-  background-color: #e8e0d6;
-  min-height: 400px;
-}
-
-.about-craft__image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+  max-width: 580px;
 }
 
 /* ─── Section 4: Mission ──────────────────────── */
@@ -530,17 +511,7 @@ const values = [
 
   /* Section 3 */
   .about-craft {
-    grid-template-columns: 1fr;
-  }
-
-  /* image goes on top */
-  .about-craft__image {
-    order: -1;
-    min-height: 55vw;
-  }
-
-  .about-craft__text {
-    padding: 2.5rem 1.5rem;
+    padding: 3.5rem 0;
   }
 
   .about-craft__title {

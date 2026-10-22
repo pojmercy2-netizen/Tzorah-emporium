@@ -3,6 +3,12 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/app.css'],
+
+  // Netlify serverless deployment
+  nitro: {
+    preset: 'netlify'
+  },
+
   app: {
     head: {
       title: 'TZORAH EMPORIUM | Luxury Perfumes, Botanical Oils & Lifestyle Emporium',
@@ -29,3 +35,4 @@ export default defineNuxtConfig({
     }
   }
 })
+
